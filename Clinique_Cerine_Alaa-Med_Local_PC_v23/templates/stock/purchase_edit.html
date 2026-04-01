@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Réception — {{ purchase.supplier.name }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="{% url 'purchases_list' %}">← Achats</a>
+  <a class="btn" href="{% url 'purchase_delivery_note' purchase.id %}">🖨️ Bon de livraison</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<!-- En-tête statut -->
+<div class="cf-card" style="padding:20px 28px;margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Bon de réception</div>
+      <div style="font-family:var(--font-serif);font-style:italic;font-size:22px">{{ purchase.supplier.name }}</div>
+      <div class="muted" style="font-size:13px;margin-top:4px">
+        {{ purchase.purchased_at|date:"d/m/Y" }}
+        {% if purchase.invoice_no %} · Réf. <b>{{ purchase.invoice_no }}</b>{% endif %}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      {% if purchase.status == "APPROVED" or purchase.status == "RECEIVED" or purchase.status == "PAID" %}
+        <span class="badge green">{{ purchase.get_status_display }}</span>
+      {% elif purchase.status == "CANCELLED" %}
+        <span class="badge red">{{ purchase.get_status_display }}</span>
+      {% else %}
+        <span class="badge amber">{{ purchase.get_status_display }}</span>
+      {% endif %}
+      <div style="font-size:26px;font-weight:800">{{ purchase.total_amount }}
+        <span style="font-size:13px;color:var(--muted);font-weight:400">DA</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1.4fr;gap:16px;align-items:start">
+
+  <!-- Modifier en-tête -->
+  <div class="cf-card">
+    <div class="cf-section-title">✏️ Modifier les informations</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid" style="gap:14px">
+        <div class="cf-field">
+          <label class="cf-label">Fournisseur</label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="supplier">
+              {% for s in form.supplier.field.queryset %}
+              <option value="{{ s.id }}" {% if purchase.supplier_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Référence facture</label>
+          <input class="cf-input" type="text" name="invoice_no" value="{{ purchase.invoice_no|default:'' }}" placeholder="FAC-…">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Date</label>
+          <input class="cf-input" type="date" name="purchased_at" value="{{ purchase.purchased_at|date:'Y-m-d' }}">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Statut</label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="status">
+              {% for val, label in form.status.field.choices %}
+              <option value="{{ val }}" {% if purchase.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Note</label>
+          <input class="cf-input" type="text" name="note" value="{{ purchase.note|default:'' }}" placeholder="…">
+        </div>
+      </div>
+      <div class="cf-actions" style="padding-top:14px;margin-top:0">
+        <button name="save_header" class="cf-btn-submit" style="font-size:13px;padding:10px 20px">💾 Enregistrer</button>
+        {% if purchase.status != "APPROVED" and purchase.status != "RECEIVED" and purchase.status != "PAID" %}
+        <button name="approve" class="cf-btn-submit" style="background:var(--accent2);font-size:13px;padding:10px 20px">✔ Valider</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Articles -->
+  <div class="cf-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="cf-section-title" style="margin:0;padding:0;border:none">📦 Articles reçus</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:8px 14px;border-radius:12px;border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);background:color-mix(in srgb,var(--accent) 8%,transparent)">
+        <div class="muted" style="font-size:10px;text-transform:uppercase;letter-spacing:.6px">Total</div>
+        <div style="font-size:20px;font-weight:800">{{ purchase.total_amount }} <span style="font-size:12px;color:var(--muted);font-weight:400">DA</span></div>
+      </div>
+    </div>
+
+    <!-- Ajout article -->
+    <form method="post" style="margin-bottom:14px">
+      {% csrf_token %}
+      <div style="display:flex;gap:8px;align-items:center;padding:10px 14px;border:1.5px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--bg) 50%,transparent)">
+        <span style="opacity:.5;font-size:16px">🔎</span>
+        <input class="cf-input" type="text" name="it-label"
+          placeholder="Code-barres ou nom de l'article…"
+          style="border:none;background:transparent;padding:4px 0;flex:1">
+        <input class="cf-input" type="number" name="it-qty" placeholder="Qté" step="0.01"
+          style="width:80px;border-radius:10px;padding:8px 10px;text-align:center">
+        <input class="cf-input" type="number" name="it-unit_price" placeholder="Prix" step="0.01"
+          style="width:90px;border-radius:10px;padding:8px 10px;text-align:center">
+        <button name="add_item" class="cf-btn-submit"
+          style="padding:9px 16px;font-size:13px;border-radius:100px;flex-shrink:0">+ Ajouter</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;padding-left:4px">💡 Tapez l'article → quantité → prix unitaire</div>
+    </form>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Article</th>
+          <th style="text-align:right;width:70px">Qté</th>
+          <th style="text-align:right;width:100px">P.U</th>
+          <th style="text-align:right;width:110px">Total</th>
+          <th style="width:50px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+        <tr>
+          <td><b>{{ it.label }}</b></td>
+          <td style="text-align:right">{{ it.qty }}</td>
+          <td style="text-align:right;color:var(--muted)">{{ it.unit_price }} DA</td>
+          <td style="text-align:right"><b>{{ it.line_total }} DA</b></td>
+          <td style="text-align:center">
+            <a class="btn small red" href="{% url 'purchase_delete_item' it.id %}"
+               onclick="return confirm('Supprimer ?')" style="padding:5px 9px">🗑</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center;padding:28px;color:var(--muted)">
+            <div style="font-size:24px;margin-bottom:8px;opacity:.4">📦</div>
+            Aucun article. Utilisez le champ ci-dessus.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

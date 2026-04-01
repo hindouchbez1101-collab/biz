@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Historique Achats{% endblock %}
+{% block actions %}
+  <a class="btn" href="/stock/fournisseurs/">🏭 Fournisseurs</a>
+  <a class="btn primary" href="/stock/achats/new/">+ Nouvel achat</a>
+{% endblock %}
+{% block content %}
+
+<!-- Filtres par statut -->
+<div class="card" style="padding:14px 18px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span class="muted" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px">Statut :</span>
+    <a class="btn small {% if not status %}primary{% endif %}" href="/stock/achats/">Tous</a>
+    {% for k,v in statuses.choices %}
+    <a class="btn small {% if status == k %}primary{% endif %}" href="/stock/achats/?status={{ k }}">{{ v }}</a>
+    {% endfor %}
+    <span class="muted" style="margin-left:auto;font-size:12px">{{ purchases|length }} achat(s)</span>
+  </div>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr><th>Date</th><th>Fournisseur</th><th>Réf. facture</th><th>Statut</th><th style="text-align:right">Total</th><th>Créé par</th><th>Validé par</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for p in purchases %}
+      <tr>
+        <td style="white-space:nowrap">{{ p.purchased_at|date:"d/m/Y" }}</td>
+        <td><b>{{ p.supplier.name }}</b></td>
+        <td class="muted" style="font-size:12px">{{ p.invoice_no|default:"—" }}</td>
+        <td>
+          {% if p.status == "APPROVED" or p.status == "RECEIVED" or p.status == "PAID" %}
+            <span class="badge green">{{ p.get_status_display }}</span>
+          {% elif p.status == "CANCELLED" %}
+            <span class="badge red">{{ p.get_status_display }}</span>
+          {% else %}
+            <span class="badge amber">{{ p.get_status_display }}</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right"><b>{{ p.total_amount }} DA</b></td>
+        <td class="muted" style="font-size:12px">{{ p.created_by.username }}</td>
+        <td class="muted" style="font-size:12px">{% if p.approved_by %}{{ p.approved_by.username }}{% else %}—{% endif %}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <a class="btn small" href="/stock/achats/{{ p.id }}/edit/">✏️ Ouvrir</a>
+            <a class="btn small" href="/stock/achats/{{ p.id }}/bl/">🖨️ BL</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="muted" style="text-align:center;padding:36px">
+        <div style="font-size:28px;margin-bottom:10px;opacity:.4">📦</div>
+        Aucun achat trouvé.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

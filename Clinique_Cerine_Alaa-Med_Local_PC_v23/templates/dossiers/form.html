@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/{{ patient.id }}/">← {{ patient.last_name }} {{ patient.first_name }}</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/dossiers.css">
+<div class="dm-wrap">
+
+  <!-- Stepper -->
+  <div class="dm-stepper">
+    <div class="dm-step active" data-step="1" onclick="goStep(1)">
+      <div class="dm-step-circle">1</div>
+      <div class="dm-step-label">Dossier</div>
+    </div>
+    <div class="dm-step" data-step="2" onclick="goStep(2)">
+      <div class="dm-step-circle">2</div>
+      <div class="dm-step-label">Identité</div>
+    </div>
+    <div class="dm-step" data-step="3" onclick="goStep(3)">
+      <div class="dm-step-circle">3</div>
+      <div class="dm-step-label">Prise en charge</div>
+    </div>
+    <div class="dm-step" data-step="4" onclick="goStep(4)">
+      <div class="dm-step-circle">4</div>
+      <div class="dm-step-label">Autorisation</div>
+    </div>
+  </div>
+
+  {% if form.errors %}
+  <div class="dm-errors">⚠️ Certains champs sont invalides — vérifiez chaque étape avant d'enregistrer.</div>
+  {% endif %}
+
+  <form method="post" id="dossierForm">
+    {% csrf_token %}
+
+    <!-- ═══ ÉTAPE 1 — Dossier ════════════════════════════════════════════════ -->
+    <div class="dm-panel active" id="panel-1">
+      <div class="dm-section">
+        <div class="dm-section-title">🗂️ Identification du dossier</div>
+        <div class="dm-fields cols-2">
+          <div class="dm-field">
+            <label class="dm-label">N° Dossier <span class="req">*</span></label>
+            <input class="dm-input" name="numero" value="{{ form.numero.value|default:auto_numero }}" placeholder="{{ auto_numero }}" required>
+            <span style="font-size:11px;color:var(--dm-teal2);margin-top:3px">✨ Numéro généré automatiquement — modifiable</span>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Type de dossier <span class="req">*</span></label>
+            <select class="dm-input" name="type_dossier" id="typeDossier">
+              <option value="GENERAL"   {% if form.type_dossier.value == "GENERAL" %}selected{% endif %}>🟣 Maternité Général</option>
+              <option value="CHIFA"     {% if form.type_dossier.value == "CHIFA" or not form.type_dossier.value %}selected{% endif %}>🟢 Maternité Chifa ACC</option>
+              <option value="MILITAIRE" {% if form.type_dossier.value == "MILITAIRE" %}selected{% endif %}>🔵 Maternité Militaire</option>
+            </select>
+          </div>
+          <div class="dm-field" id="fieldNumAss">
+            <label class="dm-label" id="labelNumAss">N° Assurance (Chifa)</label>
+            <input class="dm-input" name="num_ass" value="{{ form.num_ass.value|default:'' }}" placeholder="ex: 23033802.83.36">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Date dépôt dossier</label>
+            <input class="dm-input" type="date" name="date_depot" value="{{ form.date_depot.value|default:'' }}">
+          </div>
+        </div>
+      </div>
+      <div class="dm-nav-row">
+        <span></span>
+        <button type="button" class="dm-btn primary" onclick="goStep(2)">Suivant — Identité →</button>
+      </div>
+    </div>
+
+    <!-- ═══ ÉTAPE 2 — Identité ═══════════════════════════════════════════════ -->
+    <div class="dm-panel" id="panel-2">
+      <div class="dm-section">
+        <div class="dm-section-title">👤 Identité de la patiente</div>
+        <div class="dm-fields cols-2">
+          <div class="dm-field">
+            <label class="dm-label">Nom <span class="req">*</span></label>
+            <input class="dm-input" name="nom" value="{{ form.nom.value|default:patient.last_name }}" required>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Prénom <span class="req">*</span></label>
+            <input class="dm-input" name="prenom" value="{{ form.prenom.value|default:patient.first_name }}" required>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Date de naissance</label>
+            <input class="dm-input" type="date" name="date_naissance" value="{{ form.date_naissance.value|default:patient.birth_date|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Lieu de naissance</label>
+            <input class="dm-input" name="lieu_naissance" value="{{ form.lieu_naissance.value|default:'' }}" placeholder="ex: Oran">
+          </div>
+          <div class="dm-field span-2">
+            <label class="dm-label">Époux</label>
+            <input class="dm-input" name="epoux" value="{{ form.epoux.value|default:'' }}" placeholder="Nom et prénom du mari">
+          </div>
+        </div>
+      </div>
+      <div class="dm-nav-row">
+        <button type="button" class="dm-btn ghost" onclick="goStep(1)">← Retour</button>
+        <button type="button" class="dm-btn primary" onclick="goStep(3)">Suivant — Prise en charge →</button>
+      </div>
+    </div>
+
+    <!-- ═══ ÉTAPE 3 — Prise en charge ═══════════════════════════════════════ -->
+    <div class="dm-panel" id="panel-3">
+      <div class="dm-section">
+        <div class="dm-section-title">🏥 Prise en charge médicale</div>
+        <div class="dm-fields cols-2">
+          <div class="dm-field">
+            <label class="dm-label">Médecin traitant</label>
+            <input class="dm-input" name="medecin" value="{{ form.medecin.value|default:'' }}" placeholder="Dr. Nom Prénom">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Service</label>
+            <input class="dm-input" name="service" value="{{ form.service.value|default:'' }}" placeholder="ex: Maternité">
+          </div>
+          <div class="dm-field span-2">
+            <label class="dm-label">Diagnostic</label>
+            <input class="dm-input" name="diagnostic" value="{{ form.diagnostic.value|default:'' }}" placeholder="Diagnostic principal">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Date d'entrée</label>
+            <input class="dm-input" type="date" name="date_entree" value="{{ form.date_entree.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Date d'intervention</label>
+            <input class="dm-input" type="date" name="date_intervention" value="{{ form.date_intervention.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Date de sortie</label>
+            <input class="dm-input" type="date" name="date_sortie" value="{{ form.date_sortie.value|default:'' }}">
+          </div>
+        </div>
+      </div>
+      <div class="dm-section">
+        <div class="dm-section-title">📝 Notes</div>
+        <textarea class="dm-textarea" name="notes" rows="3" placeholder="Notes libres…">{{ form.notes.value|default:'' }}</textarea>
+      </div>
+      <div class="dm-nav-row">
+        <button type="button" class="dm-btn ghost" onclick="goStep(2)">← Retour</button>
+        <button type="button" class="dm-btn primary" onclick="goStep(4)">Suivant — Autorisation →</button>
+      </div>
+    </div>
+
+    <!-- ═══ ÉTAPE 4 — Autorisation ═══════════════════════════════════════════ -->
+    <div class="dm-panel" id="panel-4">
+      <div class="dm-section">
+        <div class="dm-section-title">✍️ Engagement — Autorisation d'opérer</div>
+        <div class="dm-autorisation-box">
+          Je soussigné(e), ayant connaissance de la nature de ma maladie, autorise mon médecin traitant ainsi que l'équipe chirurgicale de la Clinique CERINE<sub>Alaa-Med</sub> à pratiquer tout acte médical et chirurgical jugé nécessaire, en étant conscient(e) des complications qui pourraient éventuellement survenir.
+        </div>
+        <div class="dm-fields cols-2">
+          <div class="dm-field span-2">
+            <label class="dm-label">Père / Tuteur légal / Mari</label>
+            <input class="dm-input" name="tuteur_nom" value="{{ form.tuteur_nom.value|default:'' }}" placeholder="Nom et prénom">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Adresse</label>
+            <input class="dm-input" name="tuteur_adresse" value="{{ form.tuteur_adresse.value|default:'' }}" placeholder="Adresse du tuteur">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Téléphone</label>
+            <input class="dm-input" name="tuteur_tel" value="{{ form.tuteur_tel.value|default:'' }}" placeholder="ex: 07 00 00 00 00">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">CN/PQ N°</label>
+            <input class="dm-input" name="cn_pq_no" value="{{ form.cn_pq_no.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Délivré le</label>
+            <input class="dm-input" type="date" name="cn_delivre_le" value="{{ form.cn_delivre_le.value|default:'' }}">
+          </div>
+          <div class="dm-field span-2">
+            <label class="dm-label">Diagnostic (sur l'autorisation)</label>
+            <textarea class="dm-textarea" name="diagnostic_autorisation" rows="3" placeholder="Diagnostic signé par le tuteur…">{{ form.diagnostic_autorisation.value|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="dm-nav-row">
+        <button type="button" class="dm-btn ghost" onclick="goStep(3)">← Retour</button>
+        <button type="submit" class="dm-btn primary">💾 Enregistrer le dossier</button>
+      </div>
+    </div>
+
+  </form>
+</div>
+
+<script>
+let currentStep = 1;
+function goStep(n) {
+  document.querySelectorAll('.dm-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  document.querySelectorAll('.dm-step').forEach(s => {
+    const sn = parseInt(s.dataset.step);
+    s.classList.remove('active', 'done');
+    if (sn === n) s.classList.add('active');
+    else if (sn < n) s.classList.add('done');
+  });
+  currentStep = n;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// Adapter le label du N° selon le type
+const typeSel = document.getElementById('typeDossier');
+const labelNumAss = document.getElementById('labelNumAss');
+const fieldNumAss = document.getElementById('fieldNumAss');
+function updateNumAssLabel() {
+  const t = typeSel.value;
+  if (t === 'CHIFA')     { labelNumAss.textContent = 'N° Assurance (Chifa)'; fieldNumAss.style.display = ''; }
+  else if (t === 'MILITAIRE') { labelNumAss.textContent = 'N° Militaire'; fieldNumAss.style.display = ''; }
+  else { fieldNumAss.style.display = 'none'; }
+}
+typeSel.addEventListener('change', updateNumAssLabel);
+updateNumAssLabel();
+
+// Si erreurs de form, aller au bon step
+{% if form.errors %}
+goStep(1);
+{% endif %}
+</script>
+{% endblock %}

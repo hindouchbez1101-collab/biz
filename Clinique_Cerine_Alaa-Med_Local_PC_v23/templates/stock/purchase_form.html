@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Nouvelle réception{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'purchases_list' %}">← Achats</a>{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+<div class="cf-wrap wide">
+  <div class="cf-card">
+    <div class="cf-section-title">📦 Créer une nouvelle réception fournisseur (BR)</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid cols-2">
+
+        <div class="cf-field span-2">
+          <label class="cf-label">Fournisseur <span class="req">*</span></label>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div class="cf-select-wrap" style="flex:1">
+              <select class="cf-select" name="supplier" required>
+                <option value="">— Sélectionner un fournisseur —</option>
+                {% for s in suppliers %}
+                <option value="{{ s.id }}" {% if form.supplier.value == s.id|stringformat:'s' %}selected{% endif %}>
+                  {{ s.name }}{% if s.phone %} — {{ s.phone }}{% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <a class="btn" href="{% url 'supplier_new' %}" style="flex-shrink:0;border-radius:14px;padding:12px 18px">+ Ajouter</a>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Référence facture / bon <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="text" name="invoice_no"
+            value="{{ form.invoice_no.value|default:'' }}"
+            placeholder="ex : FAC-2026-0042">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Date de réception <span class="req">*</span></label>
+          <input class="cf-input" type="date" name="purchased_at"
+            value="{{ form.purchased_at.value|default:'' }}" required>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Statut initial</label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="status">
+              {% for val, label in statuses %}
+              <option value="{{ val }}" {% if val == "PENDING" %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Note <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="text" name="note"
+            value="{{ form.note.value|default:'' }}"
+            placeholder="Informations complémentaires…">
+        </div>
+
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit">Créer la réception → Ajouter les articles</button>
+        <a class="btn" href="{% url 'purchases_list' %}">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Examens Maternité{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/">Choisir une patiente</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/dossiers.css">
+<div class="dm-wrap">
+
+  <div class="dm-search-bar">
+    <form method="get" style="display:flex;gap:10px;flex:1;flex-wrap:wrap;align-items:center">
+      <input class="dm-search-input" name="q" value="{{ q }}" placeholder="🔍  N° examen, nom patient…">
+      <select class="dm-select" name="type">
+        <option value="">Tous les types</option>
+        <option value="ANAMNESE"    {% if t == "ANAMNESE" %}selected{% endif %}>📋 Anamnèse</option>
+        <option value="PARTOGRAMME" {% if t == "PARTOGRAMME" %}selected{% endif %}>📊 Partogramme</option>
+        <option value="NOUVEAU_NE"  {% if t == "NOUVEAU_NE" %}selected{% endif %}>👶 Nouveau-né</option>
+      </select>
+      <button class="dm-btn primary" type="submit">Filtrer</button>
+      {% if q or t %}<a class="dm-btn ghost" href="/examens/">Effacer</a>{% endif %}
+    </form>
+    <div style="font-size:13px;color:var(--muted);white-space:nowrap">{{ examens|length }} examen(s)</div>
+  </div>
+
+  <div class="dm-examen-grid">
+    {% for e in examens %}
+    <a class="dm-examen-card {{ e.type_examen }}" href="/examens/{{ e.id }}/">
+      <div class="dm-examen-type-icon">
+        {% if e.type_examen == "ANAMNESE" %}📋
+        {% elif e.type_examen == "PARTOGRAMME" %}📊
+        {% else %}👶{% endif %}
+      </div>
+      <div class="dm-examen-num">N° {{ e.numero_manuel }}</div>
+      <div class="dm-examen-patient">{{ e.patient }}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">{{ e.get_type_examen_display }}</div>
+      <div class="dm-examen-footer">
+        <span>{{ e.date_examen|date:"d/m/Y" }}</span>
+        <span class="dm-btn sm">Voir →</span>
+      </div>
+    </a>
+    {% empty %}
+    <div class="dm-empty" style="grid-column:1/-1">
+      <div class="dm-empty-icon">🔬</div>
+      <div class="dm-empty-text">Aucun examen trouvé.<br>
+        <a href="/patients/" style="color:var(--dm-teal2)">Sélectionnez une patiente</a> pour créer un examen.
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

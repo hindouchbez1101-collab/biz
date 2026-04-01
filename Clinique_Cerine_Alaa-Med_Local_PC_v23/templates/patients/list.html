@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Patients{% endblock %}
+{% block actions %}
+  <a class="btn primary" href="/patients/new/">+ Nouveau patient</a>
+{% endblock %}
+{% block content %}
+
+<div class="grid-3">
+  <div class="card kpi-accent-blue">
+    <div class="card-label">Total patients</div>
+    <div class="card-kpi">{{ stats.total }}</div>
+  </div>
+  <div class="card kpi-accent-green">
+    <div class="card-label">Nouveaux ce mois</div>
+    <div class="card-kpi">{{ stats.new_month }}</div>
+  </div>
+  <div class="card kpi-accent-amber">
+    <div class="card-label">Enregistrés aujourd'hui</div>
+    <div class="card-kpi">{{ stats.new_today }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <form method="get" style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <input class="input" name="q" value="{{ q }}" placeholder="🔍  Nom, prénom, téléphone…" style="max-width:300px;border-radius:100px">
+    <button class="btn" type="submit">Chercher</button>
+    {% if q %}<a class="btn" href="/patients/">✕ Effacer</a>{% endif %}
+    <span class="muted" style="font-size:12px;margin-left:auto">{{ patients|length }} résultat(s)</span>
+  </form>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Nom &amp; Prénom</th>
+        <th>Téléphone</th>
+        <th>Date de naissance</th>
+        <th>Inscrit le</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in patients %}
+      <tr>
+        <td class="muted" style="font-size:11px">{{ p.id }}</td>
+        <td>
+          <a href="/patients/{{ p.id }}/" style="font-weight:700">{{ p.last_name }} {{ p.first_name }}</a>
+          {% if p.notes %}<div class="muted" style="font-size:11px;margin-top:2px">{{ p.notes|truncatechars:50 }}</div>{% endif %}
+        </td>
+        <td>{{ p.phone }}</td>
+        <td class="muted">{% if p.birth_date %}{{ p.birth_date|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+        <td class="muted">{{ p.created_at|date:"d/m/Y" }}</td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <a class="btn small" href="/patients/{{ p.id }}/">👁 Fiche</a>
+            <a class="btn small" href="/rdv/new/">📅 RDV</a>
+            <a class="btn small" href="/dossiers/patients/{{ p.id }}/new/">🗂 Dossier</a>
+            <a class="btn small primary" href="/encaissements/new/">💰</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="muted" style="text-align:center;padding:32px">
+        {% if q %}Aucun patient ne correspond à « {{ q }} ».{% else %}Aucun patient enregistré.{% endif %}
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

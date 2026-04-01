@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Solde de caisse{% endblock %}
+{% block actions %}
+  <a class="btn" href="/rapports/">📈 Rapports</a>
+  <a class="btn" href="/depenses/new/">+ Dépense</a>
+  <a class="btn" href="/rh/salaires/new/">+ Salaire</a>
+{% endblock %}
+{% block content %}
+
+<!-- Solde principal -->
+<div class="card" style="border-top: 4px solid {% if solde >= 0 %}var(--accent2){% else %}#ef4444{% endif %}; padding: 28px 32px; margin-bottom: 4px;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+    <div>
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:8px;">Solde de caisse — toutes périodes</div>
+      <div style="font-family:var(--font-serif); font-style:italic; font-size:48px; font-weight:900; line-height:1;
+                  color:{% if solde >= 0 %}var(--accent2){% else %}#ef4444{% endif %};">
+        {{ solde|floatformat:2 }}
+        <span style="font-size:18px; color:var(--muted); font-weight:400;">DA</span>
+      </div>
+      <div style="margin-top:10px; font-size:13px; color:var(--muted);">
+        {% if solde >= 0 %}✅ Caisse excédentaire{% else %}⚠️ Caisse déficitaire{% endif %}
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; min-width:300px;">
+      <div style="padding:14px 16px; border-radius:14px; background:color-mix(in srgb,var(--accent2) 10%,transparent); border:1px solid color-mix(in srgb,var(--accent2) 25%,transparent);">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:4px;">Total encaissé</div>
+        <div style="font-size:20px; font-weight:800; color:var(--accent2);">+{{ entrees|floatformat:2 }} DA</div>
+      </div>
+      <div style="padding:14px 16px; border-radius:14px; background:color-mix(in srgb,#ef4444 10%,transparent); border:1px solid color-mix(in srgb,#ef4444 25%,transparent);">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:4px;">Total décaissé</div>
+        <div style="font-size:20px; font-weight:800; color:#f87171;">−{{ sorties|floatformat:2 }} DA</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Décomposition des sorties -->
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+  <div class="card">
+    <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px;">Dépenses courantes</div>
+    <div style="font-size:22px; font-weight:800; color:#f87171;">−{{ depenses|floatformat:2 }} DA</div>
+    <a href="/depenses/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir les dépenses →</a>
+  </div>
+  <div class="card">
+    <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px;">Salaires versés</div>
+    <div style="font-size:22px; font-weight:800; color:#f59e0b;">−{{ salaires|floatformat:2 }} DA</div>
+    <a href="/rh/salaires/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir les salaires →</a>
+  </div>
+  <div class="card">
+    <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px;">Achats stock</div>
+    <div style="font-size:22px; font-weight:800; color:var(--muted);">−{{ achats|floatformat:2 }} DA</div>
+    <a href="/stock/achats/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir les achats →</a>
+  </div>
+</div>
+
+<!-- Journal des opérations -->
+<div class="card">
+  <div class="card-title">📒 Journal des opérations (40 dernières)</div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Libellé</th>
+        <th>Référence</th>
+        <th style="text-align:right">Entrée (+)</th>
+        <th style="text-align:right">Sortie (−)</th>
+        <th style="text-align:right">Sens</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for op in ops %}
+      <tr>
+        <td class="muted" style="font-size:12px; white-space:nowrap;">
+          {% if op.date %}{{ op.date|date:"d/m/Y" }}{% else %}—{% endif %}
+        </td>
+        <td>{{ op.libelle }}</td>
+        <td class="muted" style="font-size:12px; font-family:monospace;">{{ op.ref }}</td>
+        <td style="text-align:right; color:var(--accent2); font-weight:700;">
+          {% if op.type == "entree" %}+{{ op.montant|floatformat:2 }} DA{% else %}—{% endif %}
+        </td>
+        <td style="text-align:right; color:#f87171; font-weight:700;">
+          {% if op.type == "sortie" %}−{{ op.montant|floatformat:2 }} DA{% else %}—{% endif %}
+        </td>
+        <td style="text-align:right;">
+          {% if op.type == "entree" %}
+            <span class="badge green">↑ Entrée</span>
+          {% else %}
+            <span class="badge red">↓ Sortie</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="muted" style="text-align:center; padding:28px;">Aucune opération enregistrée.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

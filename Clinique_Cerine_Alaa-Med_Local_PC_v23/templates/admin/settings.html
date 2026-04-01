@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Paramètres{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+
+  <!-- ══ Tarifs accouchement ══ -->
+  <div class="cf-card">
+    <div class="cf-section-title">🏥 Tarifs par défaut — Accouchement</div>
+    <p class="cf-hint" style="margin-bottom:16px">Ces montants sont pré-remplis automatiquement lors d'un encaissement accouchement. Vous pouvez les modifier à chaque saisie.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid cols-2" style="gap:14px">
+
+        <div class="cf-field">
+          <label class="cf-label">Salle / Bloc opératoire <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="salle" step="0.01" min="0" value="{{ tarifs.salle }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Séjour par nuit <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="sejour_nuit" step="0.01" min="0" value="{{ tarifs.sejour_nuit }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Anesthésie <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="anesthesie" step="0.01" min="0" value="{{ tarifs.anesthesie }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Sage-femme <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="sage_femme" step="0.01" min="0" value="{{ tarifs.sage_femme }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Frais administratifs <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="frais_admin" step="0.01" min="0" value="{{ tarifs.frais_admin }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Certificat de naissance <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="certificat_naissance" step="0.01" min="0" value="{{ tarifs.certificat_naissance }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Frais dossier Chifa / Militaire <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="frais_chifa" step="0.01" min="0" value="{{ tarifs.frais_chifa }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Médicaments &amp; consommables (défaut) <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="medicaments_defaut" step="0.01" min="0" value="{{ tarifs.medicaments_defaut }}">
+        </div>
+
+      </div>
+
+      {% if tarifs.updated_at %}
+      <div style="font-size:11px;color:var(--muted);margin-top:12px">
+        Dernière mise à jour : {{ tarifs.updated_at|date:"d/m/Y à H:i" }}
+      </div>
+      {% endif %}
+
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit" name="save_tarifs">💾 Enregistrer les tarifs</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ══ Packs & Analyses ══ -->
+  <div>
+    <div class="cf-card" style="margin-bottom:14px">
+      <div class="cf-section-title">🧪 Packs d'analyses</div>
+      <p class="cf-hint" style="margin-bottom:10px">Pour modifier : Admin Django → LabPack</p>
+      <ul style="margin:0;padding-left:16px;font-size:13px;line-height:2.2">
+        {% for p in packs %}
+        <li>
+          <b>{{ p.name }}</b>
+          <span class="muted" style="font-size:12px"> — {{ p.tests.all|join:", " }}</span>
+        </li>
+        {% empty %}
+        <li class="muted">Aucun pack configuré.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="cf-card">
+      <div class="cf-section-title">📋 Analyses disponibles</div>
+      <p class="cf-hint" style="margin-bottom:10px">Pour modifier : Admin Django → LabTest</p>
+      <ul style="margin:0;padding-left:16px;font-size:13px;line-height:2;max-height:280px;overflow-y:auto">
+        {% for t in tests|slice:":80" %}
+        <li>{{ t.name }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- Médicaments & consommables -->
+<div class="cf-card" style="margin-top:16px">
+  <div class="cf-section-title">🧴 Médicaments &amp; Consommables</div>
+  <p class="cf-hint" style="margin-bottom:14px">Ces médicaments seront proposés en autocomplétion à la caisse.</p>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+    <!-- Liste existante -->
+    <table class="table">
+      <thead><tr><th>Nom</th><th style="text-align:right">Prix unit.</th><th></th></tr></thead>
+      <tbody>
+        {% for m in medicaments %}
+        <tr>
+          <td><b>{{ m.nom }}</b></td>
+          <td style="text-align:right">{{ m.prix_unit }} DA</td>
+          <td>
+            <form method="post" style="display:inline">
+              {% csrf_token %}
+              <input type="hidden" name="med_id" value="{{ m.id }}">
+              <button type="submit" name="del_med" class="btn small red"
+                onclick="return confirm('Supprimer ?')" style="padding:5px 10px">🗑</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="muted" style="text-align:center;padding:18px">Aucun médicament configuré.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <!-- Ajouter -->
+    <div>
+      <form method="post" class="form">
+        {% csrf_token %}
+        <div class="cf-field" style="margin-bottom:12px">
+          <label class="cf-label">Nom du médicament / consommable</label>
+          <input class="cf-input" type="text" name="med_nom" placeholder="ex : Oxytocine, Sérum physiologique…">
+        </div>
+        <div class="cf-field" style="margin-bottom:16px">
+          <label class="cf-label">Prix unitaire <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="med_prix" step="0.01" min="0" placeholder="0">
+        </div>
+        <button class="cf-btn-submit" type="submit" name="add_med" style="font-size:13px;padding:10px 20px">+ Ajouter</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

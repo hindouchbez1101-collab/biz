@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+{% block title %}Caisse{% endblock %}
+{% block actions %}
+  <a class="btn" href="/encaissements/">← Encaissements</a>
+  <a class="btn" href="/dossiers/">🗂 Dossiers</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<form method="post" id="caisseForm">
+{% csrf_token %}
+
+<div style="display:grid;grid-template-columns:1fr 1.3fr;gap:16px;align-items:start">
+
+  <!-- ══ COLONNE GAUCHE — Recherche + paiement ══ -->
+  <div>
+
+    <!-- Recherche patient -->
+    <div class="cf-card">
+      <div class="cf-section-title">🔍 Rechercher la patiente</div>
+
+      <div class="cf-field" style="margin-bottom:16px">
+        <label class="cf-label">Nom, prénom ou téléphone</label>
+        <div class="cf-autocomplete">
+          <input class="cf-input" type="text" id="patientSearch"
+            placeholder="Commencer à taper…" autocomplete="off"
+            style="font-size:16px;padding:14px 18px">
+          <input type="hidden" name="patient" id="patientId">
+          <div class="cf-ac-dropdown" id="patientDropdown"></div>
+        </div>
+      </div>
+
+      <!-- Info patient trouvé -->
+      <div id="patientFound" style="display:none;padding:14px 16px;border-radius:14px;background:color-mix(in srgb,var(--accent2) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent2) 25%,transparent)">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px">Patiente sélectionnée</div>
+        <div style="font-weight:800;font-size:16px" id="pfNom">—</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px" id="pfPhone">—</div>
+      </div>
+
+      <!-- Dossier trouvé -->
+      <div id="dossierFound" style="display:none;margin-top:12px;padding:14px 16px;border-radius:14px;background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px">Dossier maternité trouvé</div>
+        <div style="font-weight:700;font-size:14px" id="dfNumero">—</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px" id="dfInfo">—</div>
+        <input type="hidden" name="dossier_id" id="dossierId">
+      </div>
+
+      <div id="noDossier" style="display:none;margin-top:12px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,#f59e0b 8%,transparent);border:1px solid color-mix(in srgb,#f59e0b 25%,transparent);font-size:13px;color:#f59e0b">
+        ⚠ Aucun dossier maternité trouvé pour cette patiente. Frais à saisir manuellement.
+      </div>
+    </div>
+
+    <!-- Type d'acte + médecin -->
+    <div class="cf-card" style="margin-top:0">
+      <div class="cf-section-title">⚕️ Acte &amp; Médecin</div>
+      <div class="cf-grid cols-2" style="gap:14px">
+        <div class="cf-field span-2">
+          <label class="cf-label">Type d'acte</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="typeActeBtns">
+            <button type="button" class="payer-btn active" data-val="NAT" onclick="setTypeActe('NAT')">🌿 Accouchement naturel</button>
+            <button type="button" class="payer-btn" data-val="CES" onclick="setTypeActe('CES')">⚕️ Césarienne</button>
+            <button type="button" class="payer-btn" data-val="CONSULT" onclick="setTypeActe('CONSULT')">💬 Consultation</button>
+            <button type="button" class="payer-btn" data-val="ECHO" onclick="setTypeActe('ECHO')">🔊 Échographie</button>
+            <button type="button" class="payer-btn" data-val="LAB" onclick="setTypeActe('LAB')">🧪 Analyses</button>
+          </div>
+          <input type="hidden" name="service_type" id="serviceType" value="NAT">
+        </div>
+        <div class="cf-field span-2">
+          <label class="cf-label">Médecin <span class="opt">(optionnel)</span></label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="doctor">
+              <option value="">— Aucun —</option>
+              {% for d in doctors %}
+              <option value="{{ d.id }}">{{ d.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="cf-field span-2">
+          <label class="cf-label">Note <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="text" name="note" placeholder="Remarque…">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tiers payant -->
+    <div class="cf-card" style="margin-top:0">
+      <div class="cf-section-title">🪪 Tiers payant</div>
+      <div class="cf-grid cols-2" style="gap:14px">
+        <div class="cf-field span-2">
+          <label class="cf-label">Type</label>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="payer-btn active" data-val="NORMAL" onclick="setPayer('NORMAL')">Aucun</button>
+            <button type="button" class="payer-btn" data-val="CHIFFA" onclick="setPayer('CHIFFA')">🟢 Chifa</button>
+            <button type="button" class="payer-btn" data-val="MIL" onclick="setPayer('MIL')">🔵 Militaire</button>
+          </div>
+          <input type="hidden" name="payer_type" id="payerType" value="NORMAL">
+        </div>
+        <div class="cf-field" id="tiersMontantRow" style="display:none">
+          <label class="cf-label">Montant pris en charge <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="tiers_montant" id="tiersMontant"
+            step="0.01" min="0" placeholder="0" oninput="updateMontantPatient()">
+        </div>
+        <div class="cf-field" id="tiersNoteRow" style="display:none">
+          <label class="cf-label">N° dossier / matricule</label>
+          <input class="cf-input" type="text" name="tiers_note"
+            placeholder="ex : 23033802.83.36">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ COLONNE DROITE — Détail frais ══ -->
+  <div>
+    <div class="cf-card">
+      <div class="cf-section-title" id="fraisTitle">🏥 Détail des frais</div>
+
+      <div class="cf-grid cols-2" style="gap:14px">
+
+        <div class="cf-field">
+          <label class="cf-label">Salle / Bloc <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acc_salle" id="fSalle"
+            step="0.01" value="{{ tarifs.salle }}" oninput="recalc()">
+        </div>
+
+        <div style="grid-column:span 2;display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;align-items:end">
+          <div class="cf-field">
+            <label class="cf-label">Nuits</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button type="button" onclick="changeNuits(-1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--text);font-size:16px;cursor:pointer">−</button>
+              <input class="cf-input" type="number" name="acc_nb_nuits" id="fNbNuits"
+                min="0" value="1" style="width:60px;text-align:center;font-weight:700" oninput="recalc()">
+              <button type="button" onclick="changeNuits(1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--text);font-size:16px;cursor:pointer">+</button>
+            </div>
+          </div>
+          <div class="cf-field">
+            <label class="cf-label">Tarif / nuit <span class="opt">DA</span></label>
+            <input class="cf-input" type="number" name="acc_tarif_nuit" id="fTarifNuit"
+              step="0.01" value="{{ tarifs.sejour_nuit }}" oninput="recalc()">
+          </div>
+          <div class="cf-field">
+            <label class="cf-label" style="color:var(--accent2)">Séjour total</label>
+            <div style="padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--accent2) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent2) 20%,transparent);font-weight:700;font-size:14px" id="fSejourTotal">0 DA</div>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Anesthésie <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acc_anesthesie" id="fAnest"
+            step="0.01" value="{{ tarifs.anesthesie }}" oninput="recalc()">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Sage-femme <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acc_sage_femme" id="fSf"
+            step="0.01" value="{{ tarifs.sage_femme }}" oninput="recalc()">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Médicaments &amp; consommables <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acc_medicaments" id="fMeds"
+            step="0.01" value="{{ tarifs.medicaments_defaut }}" oninput="recalc()">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Frais administratifs <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acc_frais_admin" id="fAdmin"
+            step="0.01" value="{{ tarifs.frais_admin }}" oninput="recalc()">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Certificat de naissance <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acc_certificat" id="fCert"
+            step="0.01" value="{{ tarifs.certificat_naissance }}" oninput="recalc()">
+        </div>
+        <div class="cf-field" id="fChifaRow" style="display:none">
+          <label class="cf-label">Frais dossier Chifa / Militaire <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acc_frais_chifa" id="fChifa"
+            step="0.01" value="{{ tarifs.frais_chifa }}" oninput="recalc()">
+        </div>
+
+        <div class="cf-field span-2">
+          <label class="cf-label">🧴 Médicaments &amp; consommables utilisés</label>
+          <div id="medsRows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button type="button" class="btn small" onclick="addMedRow()">+ Ajouter un médicament</button>
+            <span class="muted" style="font-size:12px">Total méds : <b id="medsTotal">0</b> DA → mis à jour dans les frais</span>
+          </div>
+          <!-- Liste des médicaments connus -->
+          <datalist id="medsList">
+            {% for m in medicaments %}
+            <option data-prix="{{ m.prix_unit }}" value="{{ m.nom }}">{{ m.nom }} — {{ m.prix_unit }} DA</option>
+            {% endfor %}
+          </datalist>
+        </div>
+
+        <div class="cf-field span-2">
+          <label class="cf-label">Notes <span class="opt">(optionnel)</span></label>
+          <textarea class="cf-textarea" name="acc_notes" rows="2"
+            placeholder="Observations complémentaires…"></textarea>
+        </div>
+
+      </div>
+
+      <!-- Récapitulatif financier -->
+      <div style="margin-top:18px;border:1.5px solid var(--line);border-radius:16px;overflow:hidden">
+        <div id="recapLines" style="font-size:13px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;background:color-mix(in srgb,var(--accent) 8%,transparent);padding:0">
+          <div style="padding:14px 16px;border-right:1px solid var(--line)">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px">Tiers payant</div>
+            <div style="font-size:18px;font-weight:800;color:var(--accent2)" id="recapTiers">0 DA</div>
+          </div>
+          <div style="padding:14px 16px">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px">À payer par la patiente</div>
+            <div style="font-size:22px;font-weight:900;color:var(--accent)" id="recapPatient">0 DA</div>
+          </div>
+        </div>
+        <div style="padding:14px 16px;border-top:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent);background:color-mix(in srgb,var(--accent) 14%,transparent);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Total général</div>
+          <div style="font-size:28px;font-weight:900" id="recapTotal">0 DA</div>
+        </div>
+      </div>
+
+      <div class="cf-actions" style="margin-top:16px">
+        <button class="cf-btn-submit" type="submit" style="font-size:16px;padding:15px 32px">
+          ✔ Valider &amp; Imprimer le reçu
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</form>
+
+<style>
+.payer-btn{padding:9px 16px;border-radius:100px;border:1.5px solid var(--line);background:color-mix(in srgb,var(--panel) 80%,transparent);color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.payer-btn.active{background:color-mix(in srgb,var(--accent) 18%,transparent);border-color:color-mix(in srgb,var(--accent) 40%,transparent);color:var(--accent)}
+.recap-line{display:flex;justify-content:space-between;padding:7px 16px;border-bottom:1px solid var(--line);font-size:13px}
+.recap-line:last-child{border-bottom:none}
+.recap-line .rl{color:var(--muted)}
+.recap-line .rv{font-weight:600}
+</style>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────
+const PATIENTS = {{ patients_json|safe }};
+const PREFILL_PATIENT = "{{ prefill_patient_id }}";
+const PREFILL_DOSSIER = "{{ prefill_dossier_id }}";
+
+// ── Patient autocomplete ──────────────────────────────────────
+const searchEl  = document.getElementById('patientSearch');
+const hiddenEl  = document.getElementById('patientId');
+const dropEl    = document.getElementById('patientDropdown');
+
+searchEl.addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  hiddenEl.value = '';
+  if (!q) { dropEl.classList.remove('open'); dropEl.innerHTML=''; return; }
+  const matches = PATIENTS.filter(p => p.label.toLowerCase().includes(q)).slice(0, 12);
+  dropEl.innerHTML = matches.map(p =>
+    `<div class="cf-ac-item" data-id="${p.id}" data-label="${p.label}">
+      <div class="name">${p.nom} ${p.prenom}</div>
+      <div class="phone">📞 ${p.phone}</div>
+    </div>`
+  ).join('');
+  dropEl.classList.toggle('open', matches.length > 0);
+  dropEl.querySelectorAll('.cf-ac-item').forEach(item => {
+    item.addEventListener('click', () => selectPatient(item.dataset.id, item.dataset.label));
+  });
+});
+document.addEventListener('click', e => {
+  if (!searchEl.contains(e.target) && !dropEl.contains(e.target)) dropEl.classList.remove('open');
+});
+
+function selectPatient(id, label) {
+  hiddenEl.value = id;
+  searchEl.value = label;
+  dropEl.classList.remove('open');
+  const p = PATIENTS.find(x => x.id == id);
+  if (p) {
+    document.getElementById('patientFound').style.display = '';
+    document.getElementById('pfNom').textContent = p.nom + ' ' + p.prenom;
+    document.getElementById('pfPhone').textContent = '📞 ' + p.phone;
+  }
+  loadDossier(id, '');
+}
+
+async function loadDossier(patientId, dossierId) {
+  try {
+    const url = `/encaissements/api/patient-dossier/?patient_id=${patientId}&dossier_id=${dossierId}`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('not found');
+    const data = await resp.json();
+    if (data.dossier) {
+      document.getElementById('dossierFound').style.display = '';
+      document.getElementById('noDossier').style.display = 'none';
+      document.getElementById('dfNumero').textContent = 'N° ' + data.dossier.numero;
+      let info = [];
+      if (data.dossier.diagnostic) info.push(data.dossier.diagnostic);
+      if (data.dossier.date_entree && data.dossier.date_sortie)
+        info.push('Entrée ' + formatDate(data.dossier.date_entree) + ' → Sortie ' + formatDate(data.dossier.date_sortie));
+      if (data.dossier.medecin) info.push('Dr. ' + data.dossier.medecin);
+      document.getElementById('dfInfo').textContent = info.join(' · ');
+      document.getElementById('dossierId').value = data.dossier.id;
+      // Auto-fill frais
+      setField('fNbNuits', data.frais.nb_nuits);
+      setField('fTarifNuit', data.frais.tarif_nuit);
+      setField('fSalle', data.frais.salle);
+      setField('fAnest', data.frais.anesthesie);
+      setField('fSf', data.frais.sage_femme);
+      setField('fMeds', data.frais.medicaments);
+      setField('fAdmin', data.frais.frais_admin);
+      setField('fCert', data.frais.certificat_naissance);
+      setField('fChifa', data.frais.frais_chifa);
+      // Auto-detect type acte
+      setTypeActe(data.type_acte);
+      // Auto-set tiers payant depuis le type de dossier
+      if (data.payer_type === 'CHIFA' || data.payer_type === 'CHIFFA') {
+        setPayer('CHIFFA');
+      } else if (data.payer_type === 'MILITAIRE') {
+        setPayer('MIL');
+      }
+      // Auto-fill tiers note (N° ass)
+      if (data.num_ass) {
+        const tn = document.querySelector('[name="tiers_note"]');
+        if (tn) tn.value = data.num_ass;
+      }
+      recalc();
+    } else {
+      document.getElementById('dossierFound').style.display = 'none';
+      document.getElementById('noDossier').style.display = '';
+      document.getElementById('dossierId').value = '';
+    }
+  } catch(e) {
+    document.getElementById('dossierFound').style.display = 'none';
+    document.getElementById('noDossier').style.display = '';
+  }
+}
+
+function setField(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+function formatDate(str) {
+  if (!str) return '';
+  const parts = str.split('-');
+  return parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : str;
+}
+
+// ── Type acte ─────────────────────────────────────────────────
+function setTypeActe(val) {
+  document.getElementById('serviceType').value = val;
+  document.querySelectorAll('#typeActeBtns .payer-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.val === val));
+  const isAcc = (val === 'NAT' || val === 'CES');
+  document.getElementById('fraisTitle').textContent =
+    isAcc ? (val === 'CES' ? '⚕️ Détail frais césarienne' : '🏥 Détail frais accouchement naturel')
+          : '📋 Détail des frais';
+  recalc();
+}
+
+// ── Payer type ────────────────────────────────────────────────
+function setPayer(val) {
+  document.getElementById('payerType').value = val;
+  document.querySelectorAll('.payer-btn[data-val]').forEach(btn => {
+    if (!btn.closest('#typeActeBtns')) btn.classList.toggle('active', btn.dataset.val === val);
+  });
+  const show = val !== 'NORMAL';
+  document.getElementById('tiersMontantRow').style.display = show ? '' : 'none';
+  document.getElementById('tiersNoteRow').style.display = show ? '' : 'none';
+  document.getElementById('fChifaRow').style.display = show ? '' : 'none';
+  if (!show) document.getElementById('tiersMontant').value = '0';
+  updateMontantPatient();
+}
+
+// ── Nuits stepper ─────────────────────────────────────────────
+function changeNuits(d) {
+  const inp = document.getElementById('fNbNuits');
+  inp.value = Math.max(0, (parseInt(inp.value)||0) + d);
+  recalc();
+}
+
+// ── Recalc ────────────────────────────────────────────────────
+function gf(id) { return parseFloat(document.getElementById(id)?.value||'0')||0; }
+
+function recalc() {
+  const salle   = gf('fSalle');
+  const nuits   = parseInt(document.getElementById('fNbNuits')?.value||'1')||0;
+  const tNuit   = gf('fTarifNuit');
+  const sejour  = nuits * tNuit;
+  const anest   = gf('fAnest');
+  const sf      = gf('fSf');
+  const meds    = gf('fMeds');
+  const admin   = gf('fAdmin');
+  const cert    = gf('fCert');
+  const chifa   = gf('fChifa');
+  const total   = salle + sejour + anest + sf + meds + admin + cert + chifa;
+
+  document.getElementById('fSejourTotal').textContent =
+    sejour.toLocaleString('fr-DZ') + ' DA (' + nuits + ' nuit' + (nuits>1?'s':'') + ' × ' + tNuit.toLocaleString('fr-DZ') + ' DA)';
+
+  // Recap lines
+  const lines = [];
+  if (salle)  lines.push(['Salle / Bloc', salle]);
+  if (sejour) lines.push(['Séjour (' + nuits + ' nuit' + (nuits>1?'s':'') + ')', sejour]);
+  if (anest)  lines.push(['Anesthésie', anest]);
+  if (sf)     lines.push(['Sage-femme', sf]);
+  if (meds)   lines.push(['Médicaments & consommables', meds]);
+  if (admin)  lines.push(['Frais administratifs', admin]);
+  if (cert)   lines.push(['Certificat de naissance', cert]);
+  if (chifa)  lines.push(['Frais dossier Chifa/Militaire', chifa]);
+
+  document.getElementById('recapLines').innerHTML = lines.map(([l, v]) =>
+    `<div class="recap-line"><span class="rl">${l}</span><span class="rv">${v.toLocaleString('fr-DZ')} DA</span></div>`
+  ).join('');
+
+  document.getElementById('recapTotal').textContent = total.toLocaleString('fr-DZ') + ' DA';
+  updateMontantPatient(total);
+}
+
+function updateMontantPatient(total) {
+  if (total === undefined) {
+    const salle=gf('fSalle'),nuits=parseInt(document.getElementById('fNbNuits')?.value||'1')||0,tNuit=gf('fTarifNuit');
+    total = salle + nuits*tNuit + gf('fAnest') + gf('fSf') + gf('fMeds') + gf('fAdmin') + gf('fCert') + gf('fChifa');
+  }
+  const tiersEl = document.getElementById('tiersMontant');
+  const tiers = tiersEl ? parseFloat(tiersEl.value||'0')||0 : 0;
+  const patient = Math.max(0, total - tiers);
+  document.getElementById('recapTiers').textContent = tiers.toLocaleString('fr-DZ') + ' DA';
+  document.getElementById('recapPatient').textContent = patient.toLocaleString('fr-DZ') + ' DA';
+  document.getElementById('recapTotal').textContent = total.toLocaleString('fr-DZ') + ' DA';
+}
+
+// ── Médicaments ──────────────────────────────────────────────
+function addMedRow() {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 100px 36px;gap:8px;align-items:center';
+  row.innerHTML = `
+    <input class="cf-input" type="text" name="med_nom[]" list="medsList"
+      placeholder="Nom du médicament…"
+      style="padding:9px 12px;border-radius:10px;font-size:13px"
+      oninput="autoMedPrix(this)">
+    <input class="cf-input" type="number" name="med_prix[]" placeholder="Prix DA"
+      step="0.01" oninput="computeMedsTotal()"
+      style="padding:9px 10px;border-radius:10px;font-size:13px;text-align:right">
+    <button type="button" onclick="this.closest('div').remove();computeMedsTotal()"
+      style="width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+             background:color-mix(in srgb,#ef4444 15%,transparent);color:#f87171;
+             cursor:pointer;font-size:18px">×</button>`;
+  document.getElementById('medsRows').appendChild(row);
+}
+
+function autoMedPrix(input) {
+  const opts = document.querySelectorAll('#medsList option');
+  const val = input.value.toLowerCase().trim();
+  for (const o of opts) {
+    if (o.value.toLowerCase() === val) {
+      const row = input.closest('div');
+      const prix = row.querySelector('[name="med_prix[]"]');
+      if (prix && o.dataset.prix) prix.value = o.dataset.prix;
+      computeMedsTotal();
+      break;
+    }
+  }
+}
+
+function computeMedsTotal() {
+  let total = 0;
+  document.querySelectorAll('[name="med_prix[]"]').forEach(i => total += parseFloat(i.value)||0);
+  document.getElementById('medsTotal').textContent = total.toFixed(2);
+  // Update meds field in frais
+  const medsField = document.getElementById('fMeds');
+  if (medsField) { medsField.value = total.toFixed(2); recalc(); }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+recalc();
+
+// Pre-fill from URL params
+if (PREFILL_PATIENT) {
+  const p = PATIENTS.find(x => x.id == PREFILL_PATIENT);
+  if (p) {
+    searchEl.value = p.label;
+    hiddenEl.value = p.id;
+    document.getElementById('patientFound').style.display = '';
+    document.getElementById('pfNom').textContent = p.nom + ' ' + p.prenom;
+    document.getElementById('pfPhone').textContent = '📞 ' + p.phone;
+    loadDossier(PREFILL_PATIENT, PREFILL_DOSSIER);
+  }
+}
+</script>
+{% endblock %}

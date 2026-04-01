@@ -1,0 +1,253 @@
+/* ═══════════════════════════════════════════
+   FORMS — Clinique Cerine Alaa-Med v16
+   Zéro widget Django. HTML pur & soigné.
+═══════════════════════════════════════════ */
+
+.cf-wrap {
+  max-width: 760px;
+}
+.cf-wrap.wide { max-width: 1000px; }
+
+/* Carte de formulaire */
+.cf-card {
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 28px 32px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+
+/* En-tête de section */
+.cf-section-title {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--accent);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Grille de champs */
+.cf-grid { display: grid; gap: 18px; }
+.cf-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+.cf-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.cf-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.cf-grid .span-2 { grid-column: span 2; }
+.cf-grid .span-3 { grid-column: span 3; }
+.cf-grid .span-full { grid-column: 1 / -1; }
+@media(max-width:780px) {
+  .cf-grid.cols-2, .cf-grid.cols-3, .cf-grid.cols-4 { grid-template-columns: 1fr; }
+  .cf-grid .span-2, .cf-grid .span-3 { grid-column: span 1; }
+}
+
+/* Champ individuel */
+.cf-field { display: flex; flex-direction: column; gap: 7px; }
+
+/* Label */
+.cf-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.cf-label .req { color: #f87171; }
+.cf-label .opt { font-weight: 400; font-size: 10px; letter-spacing: 0; text-transform: none; color: var(--muted); opacity: .7; }
+
+/* Inputs */
+.cf-input,
+.cf-select,
+.cf-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.cf-input::placeholder { color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.cf-input:focus,
+.cf-select:focus,
+.cf-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, color-mix(in srgb, var(--bg) 55%, transparent));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.cf-input.error, .cf-select.error, .cf-textarea.error {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248,113,113,.12);
+}
+
+/* Select arrow */
+.cf-select-wrap { position: relative; }
+.cf-select-wrap .cf-select { padding-right: 40px; cursor: pointer; }
+.cf-select-wrap::after {
+  content: '▾';
+  position: absolute;
+  right: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  font-size: 13px;
+}
+
+/* Textarea */
+.cf-textarea { resize: vertical; min-height: 80px; }
+
+/* Date input */
+.cf-input[type="date"],
+.cf-input[type="datetime-local"] {
+  color-scheme: dark;
+}
+html[data-theme="light"] .cf-input[type="date"],
+html[data-theme="light"] .cf-input[type="datetime-local"] {
+  color-scheme: light;
+}
+
+/* Toggle switch */
+.cf-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+.cf-toggle {
+  position: relative;
+  width: 46px; height: 26px;
+  flex-shrink: 0;
+}
+.cf-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; margin: 0; z-index: 1; }
+.cf-toggle-track {
+  width: 46px; height: 26px;
+  border-radius: 13px;
+  background: var(--line);
+  border: 1.5px solid var(--line);
+  transition: background .2s, border-color .2s;
+  position: absolute; top: 0; left: 0;
+}
+.cf-toggle input:checked ~ .cf-toggle-track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.cf-toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .2s;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.cf-toggle input:checked ~ .cf-toggle-thumb { transform: translateX(20px); }
+.cf-toggle-label { font-size: 14px; font-weight: 500; cursor: pointer; user-select: none; }
+
+/* Message d'erreur sous le champ */
+.cf-error-msg {
+  font-size: 12px;
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Bloc erreur général */
+.cf-alert {
+  background: color-mix(in srgb, #f87171 10%, transparent);
+  border: 1px solid color-mix(in srgb, #f87171 30%, transparent);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #f87171;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Boutons d'action */
+.cf-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding-top: 20px;
+  margin-top: 4px;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.cf-btn-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 28px;
+  border-radius: 100px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: .2px;
+  transition: opacity .15s, transform .1s;
+}
+.cf-btn-submit:hover { opacity: .88; transform: translateY(-1px); }
+.cf-btn-submit:active { transform: translateY(0); }
+
+/* Hint text */
+.cf-hint {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: -4px;
+}
+
+/* Séparateur */
+.cf-sep {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 20px 0;
+}
+
+/* Autocomplete patient search */
+.cf-autocomplete { position: relative; }
+.cf-ac-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+.cf-ac-dropdown.open { display: block; }
+.cf-ac-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent);
+  transition: background .12s;
+}
+.cf-ac-item:last-child { border-bottom: none; }
+.cf-ac-item:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.cf-ac-item .name { font-weight: 600; }
+.cf-ac-item .phone { font-size: 11px; color: var(--muted); }

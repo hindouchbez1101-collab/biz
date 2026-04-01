@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/new/">+ Patient</a>
+  <a class="btn" href="/rdv/new/">+ RDV</a>
+  <a class="btn primary" href="/encaissements/new/">💰 Encaisser</a>
+{% endblock %}
+{% block content %}
+
+<div class="grid-3">
+  <div class="card kpi-accent-blue">
+    <div class="card-label">RDV aujourd'hui</div>
+    <div class="card-kpi">{{ kpi.rdv_today }}</div>
+  </div>
+  <div class="card kpi-accent-green">
+    <div class="card-label">Recettes du jour (cash)</div>
+    <div class="card-kpi" style="font-size:22px">{{ kpi.payments_today }} <span style="font-size:14px;font-weight:400;color:var(--muted)">DA</span></div>
+  </div>
+  <div class="card kpi-accent-amber">
+    <div class="card-label">Patients enregistrés</div>
+    <div class="card-kpi">{{ kpi.patients_total }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row-between" style="margin-bottom:12px">
+    <div class="card-title" style="margin:0">📅 Planning du jour</div>
+    <a class="btn small" href="/rdv/">Voir tout</a>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Heure</th>
+        <th>Patient</th>
+        <th>Type de soin</th>
+        <th>Statut</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in next_rdv %}
+      <tr>
+        <td><b>{{ r.start_at|date:"H:i" }}</b></td>
+        <td><a href="/patients/{{ r.patient.id }}/">{{ r.patient.last_name }} {{ r.patient.first_name }}</a></td>
+        <td>{{ r.get_service_type_display }}</td>
+        <td>
+          {% if r.status == "CONFIRMED" %}<span class="badge blue">Confirmé</span>
+          {% elif r.status == "DONE" %}<span class="badge green">Terminé</span>
+          {% elif r.status == "CANCELLED" %}<span class="badge red">Annulé</span>
+          {% else %}<span class="badge muted">En attente</span>{% endif %}
+        </td>
+        <td><a class="btn small" href="/rdv/{{ r.id }}/edit/">Modifier</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Aucun rendez-vous pour aujourd'hui.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

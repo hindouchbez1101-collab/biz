@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <title>Bon de livraison — {{ p.supplier.name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 16mm 18mm; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', Arial, sans-serif;
+      color: #0a1220;
+      background: #fff;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    /* En-tête */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 18px;
+      border-bottom: 2.5px solid #0a1220;
+      margin-bottom: 22px;
+    }
+    .clinic-name {
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: 26px;
+      line-height: 1.2;
+    }
+    .clinic-sub { font-size: 11px; color: #5a6e90; margin-top: 4px; letter-spacing: .5px; }
+
+    .doc-type {
+      text-align: right;
+    }
+    .doc-type-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #5a6e90;
+      margin-bottom: 4px;
+    }
+    .doc-type-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: .5px;
+    }
+    .doc-type-ref {
+      font-size: 12px;
+      color: #5a6e90;
+      margin-top: 4px;
+    }
+
+    /* Bloc info fournisseur + méta */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .info-block {
+      padding: 14px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8faff;
+    }
+    .info-block-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #5a6e90;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .info-row { display: flex; gap: 8px; margin-bottom: 4px; }
+    .info-label { color: #5a6e90; min-width: 90px; font-size: 12px; }
+    .info-val { font-weight: 700; font-size: 12px; }
+
+    /* Tableau articles */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+    thead tr {
+      background: #0a1220;
+      color: #fff;
+    }
+    th {
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+    th.right, td.right { text-align: right; }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 13px;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:nth-child(even) { background: #f8faff; }
+
+    /* Total */
+    .total-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 28px;
+    }
+    .total-box {
+      border: 2px solid #0a1220;
+      border-radius: 10px;
+      padding: 12px 20px;
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+    }
+    .total-label { font-size: 12px; color: #5a6e90; text-transform: uppercase; letter-spacing: .8px; }
+    .total-amount { font-size: 24px; font-weight: 800; }
+    .total-currency { font-size: 13px; color: #5a6e90; }
+
+    /* Signatures */
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+    .sig-block { text-align: center; }
+    .sig-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: #5a6e90;
+      margin-bottom: 48px;
+    }
+    .sig-line { border-top: 1px solid #0a1220; padding-top: 6px; font-size: 12px; font-weight: 700; }
+
+    /* Boutons impression */
+    .print-actions {
+      position: fixed;
+      top: 16px; right: 16px;
+      display: flex;
+      gap: 8px;
+      z-index: 999;
+    }
+    .print-btn {
+      padding: 10px 18px;
+      border-radius: 100px;
+      border: 1.5px solid #0a1220;
+      background: #fff;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .print-btn.primary { background: #0a1220; color: #fff; }
+    @media print {
+      .print-actions { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="print-actions">
+  <button class="print-btn" onclick="history.back()">← Retour</button>
+  <button class="print-btn primary" onclick="window.print()">🖨️ Imprimer</button>
+</div>
+
+<!-- En-tête -->
+<div class="header">
+  <div>
+    <div class="clinic-name">Clinique Cerine<br>Alaa-Med</div>
+    <div class="clinic-sub">Établissement Hospitalier Privé · Nouveau Pôle Urbain, Chorfa (Bradaï) Chlef</div>
+  </div>
+  <div class="doc-type">
+    <div class="doc-type-label">Document</div>
+    <div class="doc-type-title">BON DE LIVRAISON</div>
+    <div class="doc-type-ref">BL-{{ p.purchased_at|date:"Ymd" }}-{{ p.id }}</div>
+  </div>
+</div>
+
+<!-- Info fournisseur + méta -->
+<div class="info-grid">
+  <div class="info-block">
+    <div class="info-block-title">Fournisseur</div>
+    <div class="info-row"><span class="info-label">Nom</span><span class="info-val">{{ p.supplier.name }}</span></div>
+    {% if p.supplier.phone %}<div class="info-row"><span class="info-label">Téléphone</span><span class="info-val">{{ p.supplier.phone }}</span></div>{% endif %}
+    {% if p.supplier.address %}<div class="info-row"><span class="info-label">Adresse</span><span class="info-val">{{ p.supplier.address }}</span></div>{% endif %}
+  </div>
+  <div class="info-block">
+    <div class="info-block-title">Réception</div>
+    <div class="info-row"><span class="info-label">Date</span><span class="info-val">{{ p.purchased_at|date:"d/m/Y" }}</span></div>
+    {% if p.invoice_no %}<div class="info-row"><span class="info-label">Réf. facture</span><span class="info-val">{{ p.invoice_no }}</span></div>{% endif %}
+    <div class="info-row"><span class="info-label">Statut</span><span class="info-val">{{ p.get_status_display }}</span></div>
+    <div class="info-row"><span class="info-label">Validé par</span><span class="info-val">{% if p.approved_by %}{{ p.approved_by.username }}{% else %}—{% endif %}</span></div>
+  </div>
+</div>
+
+<!-- Tableau articles -->
+<table>
+  <thead>
+    <tr>
+      <th>Désignation de l'article</th>
+      <th class="right" style="width:100px">Qté</th>
+      <th class="right" style="width:130px">Prix unitaire</th>
+      <th class="right" style="width:140px">Total ligne</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+    <tr>
+      <td><b>{{ it.label }}</b></td>
+      <td class="right">{{ it.qty }}</td>
+      <td class="right">{{ it.unit_price }} DA</td>
+      <td class="right"><b>{{ it.line_total }} DA</b></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" style="text-align:center;color:#5a6e90;padding:20px">Aucun article.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Total -->
+<div class="total-row">
+  <div class="total-box">
+    <span class="total-label">Total TTC</span>
+    <span class="total-amount">{{ p.total_amount }}</span>
+    <span class="total-currency">DA</span>
+  </div>
+</div>
+
+{% if p.note %}
+<div style="padding:12px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;color:#5a6e90;margin-bottom:20px">
+  <b>Note :</b> {{ p.note }}
+</div>
+{% endif %}
+
+<!-- Signatures -->
+<div class="signatures">
+  <div class="sig-block">
+    <div class="sig-label">Signature du fournisseur</div>
+    <div class="sig-line">{{ p.supplier.name }}</div>
+  </div>
+  <div class="sig-block">
+    <div class="sig-label">Signature &amp; cachet clinique</div>
+    <div class="sig-line">Clinique Cerine Alaa-Med</div>
+  </div>
+</div>
+
+</body>
+</html>

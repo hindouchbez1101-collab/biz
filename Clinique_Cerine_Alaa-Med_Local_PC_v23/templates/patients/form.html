@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block actions %}<a class="btn" href="/patients/">← Patients</a>{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+<div class="cf-wrap">
+  {% if errors.general %}<div class="cf-alert">⚠ {{ errors.general }}</div>{% endif %}
+
+  <div class="cf-card">
+    <div class="cf-section-title">👤 Informations du patient</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid cols-2">
+
+        <div class="cf-field">
+          <label class="cf-label">Nom <span class="req">*</span></label>
+          <input class="cf-input {% if errors.last_name %}error{% endif %}"
+            type="text" name="last_name"
+            value="{{ vals.last_name|default:'' }}"
+            placeholder="ex : Benali" autocomplete="family-name">
+          {% if errors.last_name %}<span class="cf-error-msg">⚠ {{ errors.last_name }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Prénom <span class="req">*</span></label>
+          <input class="cf-input {% if errors.first_name %}error{% endif %}"
+            type="text" name="first_name"
+            value="{{ vals.first_name|default:'' }}"
+            placeholder="ex : Yasmine" autocomplete="given-name">
+          {% if errors.first_name %}<span class="cf-error-msg">⚠ {{ errors.first_name }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Téléphone <span class="req">*</span></label>
+          <input class="cf-input {% if errors.phone %}error{% endif %}"
+            type="tel" name="phone"
+            value="{{ vals.phone|default:'' }}"
+            placeholder="ex : 07 00 00 00 00" autocomplete="tel">
+          {% if errors.phone %}<span class="cf-error-msg">⚠ {{ errors.phone }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Date de naissance <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="date" name="birth_date"
+            value="{{ vals.birth_date|default:'' }}">
+        </div>
+
+        <div class="cf-field span-2">
+          <label class="cf-label">Notes <span class="opt">(optionnel)</span></label>
+          <textarea class="cf-textarea" name="notes"
+            placeholder="Antécédents, allergies, informations complémentaires…">{{ vals.notes|default:'' }}</textarea>
+        </div>
+
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit">💾 Enregistrer le patient</button>
+        <a class="btn" href="/patients/">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

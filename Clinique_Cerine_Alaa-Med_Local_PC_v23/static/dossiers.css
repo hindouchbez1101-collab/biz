@@ -1,0 +1,479 @@
+/* ═══════════════════════════════════════════════════════════════
+   DOSSIERS MÉDICAUX — Clinique Cerine Alaa-Med
+   Aesthetic: Refined clinical / soft luxury medical
+   Font: Instrument Serif (display) + DM Sans (body)
+═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&display=swap');
+
+/* ── Variables propres aux dossiers ── */
+:root {
+  --dm-teal:   #0d9488;
+  --dm-teal2:  #14b8a6;
+  --dm-chifa:  #16a34a;
+  --dm-mil:    #2563eb;
+  --dm-gen:    #7c3aed;
+  --dm-gold:   #d97706;
+  --dm-rose:   #e11d48;
+  --dm-radius: 20px;
+  --dm-radius-sm: 12px;
+  --dm-font-serif: 'Instrument Serif', Georgia, serif;
+  --dm-font-sans:  'DM Sans', var(--font);
+}
+
+/* ── Conteneur principal dossiers ── */
+.dm-wrap { font-family: var(--dm-font-sans); }
+
+/* ══════════════════════════════════════
+   LISTE DES DOSSIERS
+══════════════════════════════════════ */
+
+.dm-search-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--dm-radius);
+  margin-bottom: 18px;
+}
+.dm-search-input {
+  flex: 1;
+  min-width: 200px;
+  padding: 10px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  color: var(--text);
+  font-family: var(--dm-font-sans);
+  font-size: 14px;
+}
+.dm-search-input:focus { outline: none; border-color: var(--dm-teal); box-shadow: 0 0 0 3px color-mix(in srgb, var(--dm-teal) 18%, transparent); }
+.dm-select {
+  padding: 10px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 60%, transparent);
+  color: var(--text);
+  font-family: var(--dm-font-sans);
+  font-size: 13px;
+}
+
+/* Grille de cartes dossiers */
+.dm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.dm-card {
+  position: relative;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--dm-radius);
+  padding: 20px;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+  overflow: hidden;
+  cursor: pointer;
+  text-decoration: none;
+  display: block;
+  color: var(--text);
+}
+.dm-card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,.25); border-color: color-mix(in srgb, var(--dm-teal) 40%, transparent); text-decoration: none; }
+
+/* Bande colorée selon type */
+.dm-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.dm-card.type-GENERAL::before  { background: linear-gradient(90deg, var(--dm-gen), var(--dm-teal)); }
+.dm-card.type-CHIFA::before    { background: linear-gradient(90deg, var(--dm-chifa), var(--dm-teal2)); }
+.dm-card.type-MILITAIRE::before { background: linear-gradient(90deg, var(--dm-mil), #60a5fa); }
+
+/* Badge type */
+.dm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.dm-badge.type-GENERAL  { background: color-mix(in srgb, var(--dm-gen) 15%, transparent);    color: var(--dm-gen);    border: 1px solid color-mix(in srgb, var(--dm-gen) 30%, transparent); }
+.dm-badge.type-CHIFA    { background: color-mix(in srgb, var(--dm-chifa) 15%, transparent);  color: var(--dm-chifa);  border: 1px solid color-mix(in srgb, var(--dm-chifa) 30%, transparent); }
+.dm-badge.type-MILITAIRE{ background: color-mix(in srgb, var(--dm-mil) 15%, transparent);    color: var(--dm-mil);    border: 1px solid color-mix(in srgb, var(--dm-mil) 30%, transparent); }
+
+.dm-card-num { font-family: var(--dm-font-serif); font-size: 22px; font-style: italic; margin: 10px 0 4px; }
+.dm-card-name { font-size: 17px; font-weight: 700; }
+.dm-card-meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.dm-card-meta-item { font-size: 12px; color: var(--muted); }
+.dm-card-meta-item b { color: var(--text); font-weight: 500; }
+.dm-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+/* Vide */
+.dm-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.dm-empty-icon { font-size: 48px; opacity: .4; margin-bottom: 12px; }
+.dm-empty-text { font-size: 16px; }
+
+/* ══════════════════════════════════════
+   FORMULAIRE DOSSIER — Stepper
+══════════════════════════════════════ */
+
+.dm-stepper {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  position: relative;
+}
+.dm-stepper::before {
+  content: '';
+  position: absolute;
+  top: 20px; left: 0; right: 0;
+  height: 2px;
+  background: var(--line);
+  z-index: 0;
+}
+.dm-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+}
+.dm-step-circle {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  transition: all .2s;
+}
+.dm-step.active .dm-step-circle {
+  background: var(--dm-teal);
+  border-color: var(--dm-teal);
+  color: #fff;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--dm-teal) 20%, transparent);
+}
+.dm-step.done .dm-step-circle {
+  background: color-mix(in srgb, var(--dm-teal) 20%, transparent);
+  border-color: var(--dm-teal);
+  color: var(--dm-teal);
+}
+.dm-step-label { font-size: 11px; color: var(--muted); text-align: center; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+.dm-step.active .dm-step-label { color: var(--dm-teal); }
+
+/* Panneaux de saisie */
+.dm-panel { display: none; }
+.dm-panel.active { display: block; animation: dm-fadein .25s ease; }
+@keyframes dm-fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Sections internes */
+.dm-section {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--dm-radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+.dm-section-title {
+  font-family: var(--dm-font-serif);
+  font-size: 18px;
+  font-style: italic;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--dm-teal2);
+}
+.dm-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* Grille de champs */
+.dm-fields { display: grid; gap: 14px 18px; }
+.dm-fields.cols-2 { grid-template-columns: 1fr 1fr; }
+.dm-fields.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.dm-fields.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+@media(max-width: 900px) {
+  .dm-fields.cols-2, .dm-fields.cols-3, .dm-fields.cols-4 { grid-template-columns: 1fr; }
+}
+.dm-field { display: flex; flex-direction: column; gap: 6px; }
+.dm-field.span-2 { grid-column: span 2; }
+.dm-field.span-3 { grid-column: span 3; }
+.dm-field.span-4 { grid-column: 1 / -1; }
+
+.dm-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dm-label .req { color: var(--dm-rose); margin-left: 2px; }
+
+.dm-input, .dm-select-field, .dm-textarea {
+  padding: 11px 14px;
+  border-radius: var(--dm-radius-sm);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  color: var(--text);
+  font-family: var(--dm-font-sans);
+  font-size: 14px;
+  transition: border-color .15s, box-shadow .15s;
+  width: 100%;
+}
+.dm-input:focus, .dm-select-field:focus, .dm-textarea:focus {
+  outline: none;
+  border-color: var(--dm-teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dm-teal) 18%, transparent);
+}
+.dm-textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+/* Groupe G/P/E compact */
+.dm-gpe { display: flex; gap: 10px; align-items: flex-end; }
+.dm-gpe .dm-field { flex: 1; }
+.dm-gpe .dm-gpe-sep { font-size: 24px; color: var(--muted); padding-bottom: 10px; font-weight: 300; }
+
+/* Ligne de navigation stepper */
+.dm-nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* Boutons */
+.dm-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 22px;
+  border-radius: 100px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  font-family: var(--dm-font-sans);
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; text-decoration: none;
+  transition: all .18s;
+}
+.dm-btn:hover { background: color-mix(in srgb, var(--text) 8%, transparent); text-decoration: none; }
+.dm-btn.primary {
+  background: var(--dm-teal);
+  border-color: var(--dm-teal);
+  color: #fff;
+}
+.dm-btn.primary:hover { background: var(--dm-teal2); border-color: var(--dm-teal2); }
+.dm-btn.ghost { background: transparent; }
+.dm-btn.danger { background: color-mix(in srgb, var(--dm-rose) 15%, transparent); border-color: color-mix(in srgb, var(--dm-rose) 30%, transparent); color: var(--dm-rose); }
+.dm-btn.sm { padding: 7px 14px; font-size: 12px; }
+.dm-btn.icon { width: 38px; height: 38px; padding: 0; border-radius: 50%; }
+
+/* ══════════════════════════════════════
+   DÉTAIL DOSSIER
+══════════════════════════════════════ */
+
+.dm-detail-header {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--dm-radius);
+  padding: 28px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.dm-detail-header::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 4px;
+}
+.dm-detail-header.type-GENERAL::before  { background: linear-gradient(90deg, var(--dm-gen), var(--dm-teal)); }
+.dm-detail-header.type-CHIFA::before    { background: linear-gradient(90deg, var(--dm-chifa), var(--dm-teal2)); }
+.dm-detail-header.type-MILITAIRE::before { background: linear-gradient(90deg, var(--dm-mil), #60a5fa); }
+
+.dm-detail-eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.dm-detail-title { font-family: var(--dm-font-serif); font-size: 30px; font-style: italic; margin-bottom: 6px; }
+.dm-detail-num { font-size: 14px; color: var(--muted); }
+.dm-detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 22px; }
+@media(max-width:900px){ .dm-detail-grid { grid-template-columns: 1fr 1fr; } }
+
+.dm-kv-block { display: flex; flex-direction: column; gap: 3px; }
+.dm-kv-label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; }
+.dm-kv-val { font-size: 15px; font-weight: 500; }
+.dm-kv-val.empty { color: var(--muted); font-style: italic; font-size: 13px; }
+
+/* Sections détail */
+.dm-detail-section {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--dm-radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+.dm-detail-section-title {
+  font-family: var(--dm-font-serif);
+  font-size: 17px; font-style: italic;
+  color: var(--dm-teal2);
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.dm-detail-section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+.dm-kv-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; border-bottom: 1px solid var(--line); gap: 20px; }
+.dm-kv-row:last-child { border-bottom: none; }
+.dm-kv-row .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; flex-shrink: 0; }
+.dm-kv-row .v { font-size: 14px; font-weight: 500; text-align: right; }
+.dm-kv-row .v.em { color: var(--muted); font-style: italic; }
+
+/* Examens liés — timeline */
+.dm-timeline { display: flex; flex-direction: column; gap: 10px; }
+.dm-timeline-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--dm-radius-sm);
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  transition: border-color .15s;
+}
+.dm-timeline-item:hover { border-color: color-mix(in srgb, var(--dm-teal) 40%, transparent); }
+.dm-timeline-dot {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.dm-timeline-dot.ANAMNESE    { background: color-mix(in srgb, var(--dm-gen) 15%, transparent);   border: 1px solid color-mix(in srgb, var(--dm-gen) 30%, transparent); }
+.dm-timeline-dot.PARTOGRAMME { background: color-mix(in srgb, var(--dm-gold) 15%, transparent);  border: 1px solid color-mix(in srgb, var(--dm-gold) 30%, transparent); }
+.dm-timeline-dot.NOUVEAU_NE  { background: color-mix(in srgb, var(--dm-rose) 15%, transparent);  border: 1px solid color-mix(in srgb, var(--dm-rose) 30%, transparent); }
+.dm-timeline-content { flex: 1; }
+.dm-timeline-type { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.dm-timeline-num { font-weight: 700; font-size: 15px; margin: 2px 0; }
+.dm-timeline-date { font-size: 12px; color: var(--muted); }
+.dm-timeline-actions { display: flex; gap: 8px; align-items: center; }
+
+/* ══════════════════════════════════════
+   FORMULAIRE EXAMEN — onglets type
+══════════════════════════════════════ */
+
+.dm-type-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.dm-type-tab {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 12px;
+  border-radius: var(--dm-radius);
+  border: 2px solid var(--line);
+  cursor: pointer;
+  transition: all .2s;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--dm-font-sans);
+}
+.dm-type-tab .tab-icon { font-size: 28px; }
+.dm-type-tab .tab-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.dm-type-tab .tab-desc { font-size: 11px; color: var(--muted); text-align: center; }
+.dm-type-tab:hover { border-color: color-mix(in srgb, var(--dm-teal) 50%, transparent); }
+.dm-type-tab.selected { border-color: var(--dm-teal); background: color-mix(in srgb, var(--dm-teal) 10%, transparent); }
+.dm-type-tab.selected .tab-label { color: var(--dm-teal2); }
+
+/* Données examen clinique — grille compacte */
+.dm-clinical-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+@media(max-width:900px) { .dm-clinical-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* Partogramme — zone texte stylée */
+.dm-partogramme-hint {
+  background: color-mix(in srgb, var(--dm-gold) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dm-gold) 25%, transparent);
+  border-radius: var(--dm-radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--dm-gold);
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+/* Autorisation — box spéciale */
+.dm-autorisation-box {
+  background: color-mix(in srgb, var(--dm-rose) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dm-rose) 20%, transparent);
+  border-radius: var(--dm-radius-sm);
+  padding: 14px 18px;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--text) 80%, transparent);
+  line-height: 1.65;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+/* Erreurs */
+.dm-errors {
+  background: color-mix(in srgb, var(--dm-rose) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dm-rose) 30%, transparent);
+  border-radius: var(--dm-radius-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--dm-rose);
+  margin-bottom: 14px;
+}
+
+/* ══════════════════════════════════════
+   LISTE EXAMENS
+══════════════════════════════════════ */
+
+.dm-examen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.dm-examen-card {
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--dm-radius);
+  padding: 18px 20px;
+  display: block;
+  color: var(--text);
+  text-decoration: none;
+  transition: transform .16s, box-shadow .16s, border-color .16s;
+  position: relative;
+  overflow: hidden;
+}
+.dm-examen-card:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,.2); border-color: color-mix(in srgb, var(--dm-teal) 40%, transparent); text-decoration: none; }
+.dm-examen-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.dm-examen-card.ANAMNESE::before    { background: linear-gradient(90deg, var(--dm-gen), var(--dm-teal)); }
+.dm-examen-card.PARTOGRAMME::before { background: linear-gradient(90deg, var(--dm-gold), #fbbf24); }
+.dm-examen-card.NOUVEAU_NE::before  { background: linear-gradient(90deg, var(--dm-rose), #fb7185); }
+
+.dm-examen-type-icon { font-size: 26px; margin-bottom: 10px; }
+.dm-examen-num { font-family: var(--dm-font-serif); font-size: 20px; font-style: italic; margin-bottom: 4px; }
+.dm-examen-patient { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.dm-examen-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }

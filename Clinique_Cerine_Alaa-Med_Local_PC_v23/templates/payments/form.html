@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% block title %}Nouvel encaissement{% endblock %}
+{% block actions %}<a class="btn" href="/encaissements/">← Encaissements</a>{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<form method="post" id="payForm">
+{% csrf_token %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+
+  <!-- ══════════ COLONNE GAUCHE — Informations paiement ══════════ -->
+  <div>
+    <div class="cf-card">
+      <div class="cf-section-title">💰 Informations du paiement</div>
+      <div class="cf-grid" style="gap:16px">
+
+        <div class="cf-field">
+          <label class="cf-label">Patient <span class="req">*</span></label>
+          <div class="cf-autocomplete">
+            <input class="cf-input" type="text" id="patientSearch"
+              placeholder="🔍  Nom ou téléphone…" autocomplete="off">
+            <input type="hidden" name="patient" id="patientId">
+            <div class="cf-ac-dropdown" id="patientDropdown">
+              {% for p in form.patient.field.queryset %}
+              <div class="cf-ac-item" data-id="{{ p.id }}"
+                data-label="{{ p.last_name }} {{ p.first_name }} — {{ p.phone }}">
+                <div class="name">{{ p.last_name }} {{ p.first_name }}</div>
+                <div class="phone">📞 {{ p.phone }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Type d'opération <span class="req">*</span></label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="service_type" id="serviceType">
+              <option value="">— Sélectionner —</option>
+              {% for val, label in form.service_type.field.choices %}
+              {% if val %}<option value="{{ val }}">{{ label }}</option>{% endif %}
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Type de payeur</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="payerBtns">
+            <button type="button" class="payer-btn active" data-val="NORMAL" onclick="setPayer('NORMAL')">👤 Normal</button>
+            <button type="button" class="payer-btn" data-val="CHIFFA" onclick="setPayer('CHIFFA')">🟢 Chifa</button>
+            <button type="button" class="payer-btn" data-val="MIL" onclick="setPayer('MIL')">🔵 Militaire</button>
+          </div>
+          <input type="hidden" name="payer_type" id="payerType" value="NORMAL">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Médecin <span class="opt">(optionnel)</span></label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="doctor">
+              <option value="">— Aucun —</option>
+              {% for d in form.doctor.field.queryset %}
+              <option value="{{ d.id }}">{{ d.full_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">RDV lié <span class="opt">(optionnel)</span></label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="appointment">
+              <option value="">— Aucun RDV —</option>
+              {% for rdv in form.appointment.field.queryset %}
+              <option value="{{ rdv.id }}">{{ rdv.start_at|date:"d/m/Y H:i" }} — {{ rdv.patient }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cf-field" id="tierNoteRow" style="display:none">
+          <label class="cf-label">Note tiers payant</label>
+          <input class="cf-input" type="text" name="third_party_note"
+            placeholder="N° dossier Chifa, N° matricule militaire…">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Note <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="text" name="note" placeholder="Remarque…">
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ══ Montants ══ -->
+    <div class="cf-card" id="montantsCard">
+      <div class="cf-section-title">🧾 Montants</div>
+      <div class="cf-grid cols-2" style="gap:14px">
+        <div class="cf-field">
+          <label class="cf-label">Part patient <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="amount_patient" id="amtPatient"
+            step="0.01" min="0" placeholder="0" oninput="syncTotal()">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Part tiers payant <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="amount_third_party" id="amtTiers"
+            step="0.01" min="0" placeholder="0" oninput="syncTotal()">
+        </div>
+        <div class="cf-field span-2" style="background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:14px;padding:14px 16px">
+          <label class="cf-label" style="color:var(--accent)">Total (DA)</label>
+          <input class="cf-input" type="number" name="amount_total" id="amtTotal"
+            step="0.01" min="0" placeholder="0"
+            style="border:none;background:transparent;font-size:26px;font-weight:800;padding:4px 0">
+          <span class="cf-hint" id="totalHint">= part patient + part tiers payant</span>
+        </div>
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit">✔ Valider &amp; Imprimer le reçu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ COLONNE DROITE — Détail selon type ══════════ -->
+  <div>
+
+    <!-- ══ Section ACCOUCHEMENT (NAT / CES) ══ -->
+    <div class="cf-card" id="sectionAcc" style="display:none">
+      <div class="cf-section-title" id="accTitle">🏥 Détail frais accouchement</div>
+
+      <div style="display:flex;gap:8px;margin-bottom:18px" id="typeActeBtns">
+        <button type="button" class="payer-btn active" data-val="NAT" onclick="setTypeActe('NAT')">🌿 Accouchement naturel</button>
+        <button type="button" class="payer-btn" data-val="CES" onclick="setTypeActe('CES')">⚕️ Césarienne</button>
+      </div>
+      <input type="hidden" name="acc_type" id="accType" value="NAT">
+
+      <div class="cf-grid cols-2" style="gap:12px">
+
+        <!-- Salle -->
+        <div class="cf-field">
+          <label class="cf-label">Salle / Bloc opératoire <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_salle" id="accSalle"
+            step="0.01" min="0" value="{{ tarifs.salle }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <!-- Séjour -->
+        <div class="cf-field">
+          <label class="cf-label">Nombre de nuits</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button type="button" onclick="changeNuits(-1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--text);font-size:18px;cursor:pointer;flex-shrink:0">−</button>
+            <input class="cf-input" type="number" name="acc_nb_nuits" id="accNbNuits"
+              min="0" value="1" style="text-align:center;font-weight:700;font-size:16px"
+              oninput="recalcAcc()">
+            <button type="button" onclick="changeNuits(1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--text);font-size:18px;cursor:pointer;flex-shrink:0">+</button>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Tarif / nuit <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_tarif_nuit" id="accTarifNuit"
+            step="0.01" min="0" value="{{ tarifs.sejour_nuit }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label" style="color:var(--accent2)">Séjour total <span class="opt">calculé</span></label>
+          <div style="padding:12px 16px;border-radius:14px;background:color-mix(in srgb,var(--accent2) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent2) 25%,transparent);font-weight:700;font-size:15px" id="accSejourTotal">0 DA</div>
+        </div>
+
+        <!-- Anesthésie -->
+        <div class="cf-field">
+          <label class="cf-label">Anesthésie <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_anesthesie"
+            step="0.01" min="0" value="{{ tarifs.anesthesie }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <!-- Sage-femme -->
+        <div class="cf-field">
+          <label class="cf-label">Sage-femme <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_sage_femme"
+            step="0.01" min="0" value="{{ tarifs.sage_femme }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <!-- Médicaments -->
+        <div class="cf-field">
+          <label class="cf-label">Médicaments &amp; consommables <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_medicaments"
+            step="0.01" min="0" value="{{ tarifs.medicaments_defaut }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <!-- Frais admin -->
+        <div class="cf-field">
+          <label class="cf-label">Frais administratifs (dossier) <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_frais_admin"
+            step="0.01" min="0" value="{{ tarifs.frais_admin }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <!-- Certificat de naissance -->
+        <div class="cf-field">
+          <label class="cf-label">Certificat de naissance <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_certificat"
+            step="0.01" min="0" value="{{ tarifs.certificat_naissance }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <!-- Frais Chifa / Militaire -->
+        <div class="cf-field" id="accChifaRow">
+          <label class="cf-label">Frais dossier Chifa / Militaire <span class="opt">DA</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_frais_chifa"
+            step="0.01" min="0" value="{{ tarifs.frais_chifa }}"
+            placeholder="0" oninput="recalcAcc()">
+        </div>
+
+        <!-- Notes -->
+        <div class="cf-field span-2">
+          <label class="cf-label">Notes complémentaires <span class="opt">(optionnel)</span></label>
+          <textarea class="cf-textarea" name="acc_notes" rows="2"
+            placeholder="Complications, matériel supplémentaire utilisé, observations…"></textarea>
+        </div>
+
+      </div>
+
+      <!-- Total détail accouchement -->
+      <div style="margin-top:16px;padding:16px 20px;border-radius:16px;background:color-mix(in srgb,var(--accent) 8%,transparent);border:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent)">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px">Total frais accouchement</div>
+        <div style="font-size:28px;font-weight:800" id="accTotalDisplay">0 <span style="font-size:14px;color:var(--muted);font-weight:400">DA</span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px" id="accBreakdown">—</div>
+      </div>
+
+    </div>
+
+    <!-- ══ Section ANALYSES ══ -->
+    <div class="cf-card" id="sectionLab" style="display:none">
+      <div class="cf-section-title">🧪 Lignes d'analyses</div>
+      <p class="cf-hint" style="margin-bottom:14px">Le total sera calculé depuis les lignes ci-dessous.</p>
+
+      <div style="display:grid;grid-template-columns:1.3fr 1fr 90px 36px;gap:8px;margin-bottom:8px;padding:0 2px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Analyse</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Libellé</div>
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Prix DA</div>
+        <div></div>
+      </div>
+
+      <div id="analysesRows" style="display:flex;flex-direction:column;gap:8px"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <button type="button" class="btn" onclick="addAnalyseLine()">+ Ligne</button>
+        <div style="font-size:14px;color:var(--muted)">
+          Total : <b id="analysesTotal" style="color:var(--text)">0.00</b> DA
+        </div>
+      </div>
+      <datalist id="labTestsList">
+        {% for t in lab_tests %}
+        <option data-id="{{ t.id }}" value="{{ t.name }}"></option>
+        {% endfor %}
+      </datalist>
+    </div>
+
+    <!-- ══ Section AUTRE (placeholder) ══ -->
+    <div class="cf-card" id="sectionDefault">
+      <div class="cf-section-title">ℹ️ Détail</div>
+      <p class="muted" style="font-size:13px">
+        Sélectionnez un type d'opération pour afficher les détails correspondants.
+      </p>
+    </div>
+
+  </div><!-- fin colonne droite -->
+</div><!-- fin grid -->
+</form>
+
+<style>
+.payer-btn {
+  padding: 8px 16px;
+  border-radius: 100px;
+  border: 1.5px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+}
+.payer-btn.active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+}
+</style>
+
+<script>
+// ── Patient autocomplete ──────────────────────────────────────
+(function() {
+  const search = document.getElementById('patientSearch');
+  const hidden = document.getElementById('patientId');
+  const drop   = document.getElementById('patientDropdown');
+  const items  = drop.querySelectorAll('.cf-ac-item');
+  search.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    hidden.value = '';
+    let vis = 0;
+    items.forEach(item => {
+      const show = !q || item.dataset.label.toLowerCase().includes(q);
+      item.style.display = show ? '' : 'none';
+      if (show) vis++;
+    });
+    drop.classList.toggle('open', q.length > 0 && vis > 0);
+  });
+  items.forEach(item => item.addEventListener('click', function() {
+    search.value = this.dataset.label;
+    hidden.value = this.dataset.id;
+    drop.classList.remove('open');
+  }));
+  document.addEventListener('click', e => {
+    if (!search.contains(e.target) && !drop.contains(e.target)) drop.classList.remove('open');
+  });
+})();
+
+// ── Payer type ────────────────────────────────────────────────
+function setPayer(val) {
+  document.getElementById('payerType').value = val;
+  document.querySelectorAll('.payer-btn[data-val]').forEach(btn => {
+    if (btn.closest('#typeActeBtns')) return;
+    btn.classList.toggle('active', btn.dataset.val === val);
+  });
+  document.getElementById('tierNoteRow').style.display = (val !== 'NORMAL') ? '' : 'none';
+  // Show/hide chifa row in acc section
+  const chifaRow = document.getElementById('accChifaRow');
+  if (chifaRow) chifaRow.style.display = (val !== 'NORMAL') ? '' : 'none';
+}
+
+// ── Service type → show right panel ──────────────────────────
+document.getElementById('serviceType').addEventListener('change', function() {
+  const v = this.value;
+  document.getElementById('sectionAcc').style.display    = (v === 'NAT' || v === 'CES') ? '' : 'none';
+  document.getElementById('sectionLab').style.display    = (v === 'LAB') ? '' : 'none';
+  document.getElementById('sectionDefault').style.display= (v !== 'NAT' && v !== 'CES' && v !== 'LAB') ? '' : 'none';
+  if (v === 'NAT' || v === 'CES') {
+    document.getElementById('accTitle').textContent = (v === 'CES')
+      ? '🏥 Détail frais césarienne'
+      : '🏥 Détail frais accouchement naturel';
+    setTypeActe(v);
+    recalcAcc();
+  }
+  if (v === 'LAB') computeAnalysesTotal();
+});
+
+// ── Type acte (NAT/CES) ───────────────────────────────────────
+function setTypeActe(val) {
+  document.getElementById('accType').value = val;
+  document.querySelectorAll('#typeActeBtns .payer-btn').forEach(btn =>
+    btn.classList.toggle('active', btn.dataset.val === val));
+}
+
+// ── Nuits stepper ─────────────────────────────────────────────
+function changeNuits(delta) {
+  const inp = document.getElementById('accNbNuits');
+  const v = Math.max(0, (parseInt(inp.value) || 0) + delta);
+  inp.value = v;
+  recalcAcc();
+}
+
+// ── Recalculate accouchement total ───────────────────────────
+function recalcAcc() {
+  const g = id => parseFloat(document.getElementById(id)?.value || document.querySelector(`[name="${id}"]`)?.value || '0') || 0;
+  const gn = name => parseFloat(document.querySelector(`[name="${name}"]`)?.value || '0') || 0;
+
+  const salle    = gn('acc_salle');
+  const nuits    = parseInt(document.getElementById('accNbNuits')?.value || '1') || 0;
+  const tNuit    = gn('acc_tarif_nuit');
+  const sejour   = nuits * tNuit;
+  const anest    = gn('acc_anesthesie');
+  const sf       = gn('acc_sage_femme');
+  const meds     = gn('acc_medicaments');
+  const admin    = gn('acc_frais_admin');
+  const cert     = gn('acc_certificat');
+  const chifa    = gn('acc_frais_chifa');
+  const total    = salle + sejour + anest + sf + meds + admin + cert + chifa;
+
+  document.getElementById('accSejourTotal').textContent =
+    sejour.toLocaleString('fr-DZ') + ' DA (' + nuits + ' nuit' + (nuits > 1 ? 's' : '') + ' × ' + tNuit.toLocaleString('fr-DZ') + ' DA)';
+
+  document.getElementById('accTotalDisplay').innerHTML =
+    total.toLocaleString('fr-DZ') + ' <span style="font-size:14px;color:var(--muted);font-weight:400">DA</span>';
+
+  // Breakdown
+  const lines = [];
+  if (salle)  lines.push('Salle ' + salle.toLocaleString('fr-DZ'));
+  if (sejour) lines.push('Séjour ' + sejour.toLocaleString('fr-DZ'));
+  if (anest)  lines.push('Anesthésie ' + anest.toLocaleString('fr-DZ'));
+  if (sf)     lines.push('Sage-femme ' + sf.toLocaleString('fr-DZ'));
+  if (meds)   lines.push('Médicaments ' + meds.toLocaleString('fr-DZ'));
+  if (admin)  lines.push('Frais admin. ' + admin.toLocaleString('fr-DZ'));
+  if (cert)   lines.push('Certificat ' + cert.toLocaleString('fr-DZ'));
+  if (chifa)  lines.push('Dossier Chifa/Mil. ' + chifa.toLocaleString('fr-DZ'));
+  document.getElementById('accBreakdown').textContent = lines.join(' · ') + ' DA';
+
+  // Sync total payment
+  document.getElementById('amtTotal').value = total.toFixed(2);
+  document.getElementById('amtPatient').value = total.toFixed(2);
+}
+
+// ── Sync manual total ─────────────────────────────────────────
+function syncTotal() {
+  const svc = document.getElementById('serviceType').value;
+  if (svc === 'NAT' || svc === 'CES' || svc === 'LAB') return;
+  const p = parseFloat(document.getElementById('amtPatient').value) || 0;
+  const t = parseFloat(document.getElementById('amtTiers').value) || 0;
+  document.getElementById('amtTotal').value = (p + t).toFixed(2);
+}
+
+// ── Analyses lines ────────────────────────────────────────────
+function addAnalyseLine() {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1.3fr 1fr 90px 36px;gap:8px;align-items:center';
+  row.innerHTML = `
+    <select class="cf-input" name="item_lab_test[]" style="padding:9px 12px;border-radius:10px;font-size:13px">
+      <option value="">—</option>
+      ${Array.from(document.querySelectorAll('#labTestsList option')).map(o =>
+        `<option value="${o.dataset.id}">${o.value}</option>`).join('')}
+    </select>
+    <input class="cf-input" type="text" name="item_label[]" placeholder="ou saisir…"
+      style="padding:9px 12px;border-radius:10px;font-size:13px">
+    <input class="cf-input" type="number" name="item_amount[]" placeholder="0"
+      step="0.01" oninput="computeAnalysesTotal()"
+      style="padding:9px 10px;border-radius:10px;font-size:13px;text-align:right">
+    <button type="button"
+      onclick="this.closest('div').remove();computeAnalysesTotal()"
+      style="width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+             background:color-mix(in srgb,#ef4444 15%,transparent);color:#f87171;
+             cursor:pointer;font-size:18px">×</button>`;
+  document.getElementById('analysesRows').appendChild(row);
+}
+
+function computeAnalysesTotal() {
+  let total = 0;
+  document.querySelectorAll('input[name="item_amount[]"]').forEach(i => total += parseFloat(i.value) || 0);
+  document.getElementById('analysesTotal').textContent = total.toFixed(2);
+  document.getElementById('amtTotal').value = total.toFixed(2);
+  document.getElementById('amtPatient').value = total.toFixed(2);
+}
+</script>
+{% endblock %}

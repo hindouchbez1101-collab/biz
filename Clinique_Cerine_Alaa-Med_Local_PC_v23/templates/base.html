@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ CLINIC_NAME }}</title>
+  <link rel="stylesheet" href="/static/app.css"/>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🏥</div>
+      <div>
+        <div class="brand-title">{{ CLINIC_NAME }}</div>
+        <div class="brand-sub">Local · PC</div>
+      </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <nav class="nav">
+      <a class="nav-item" href="/">📊 Dashboard</a>
+
+      {% if "RECEPTION" in USER_GROUPS or "ADMIN" in USER_GROUPS or "GERANT" in USER_GROUPS %}
+      <div class="nav-section">Réception</div>
+      <a class="nav-item" href="/patients/">👤 Patients</a>
+      <a class="nav-item" href="/rdv/">📅 Rendez-vous</a>
+      <a class="nav-item" href="/encaissements/">💰 Encaissements</a>
+      <a class="nav-item" href="/encaissements/caisse/" style="font-weight:700;color:var(--accent2)">🏦 Caisse (auto)</a>
+      <div class="nav-section">Dossiers Médicaux</div>
+      <a class="nav-item" href="/dossiers/">🗂️ Dossiers Maternité</a>
+      <a class="nav-item" href="/examens/">🔬 Examens</a>
+      <div class="nav-section">Stock</div>
+      <a class="nav-item" href="/stock/achats/">📦 Achats (BR)</a>
+      <a class="nav-item" href="/stock/fournisseurs/">🏭 Fournisseurs</a>
+      {% endif %}
+
+      {% if "GERANT" in USER_GROUPS or "ADMIN" in USER_GROUPS %}
+      <div class="nav-section">Finance & RH</div>
+      <a class="nav-item" href="/finance/caisse/" style="font-weight:700">💵 Solde de caisse</a>
+      <a class="nav-item" href="/depenses/">📤 Dépenses</a>
+      <a class="nav-item" href="/rapports/">📈 Rapports</a>
+      <a class="nav-item" href="/rh/salaires/">💼 Salaires</a>
+      <a class="nav-item" href="/rh/employes/">👥 Employés</a>
+      {% endif %}
+
+      {% if "ADMIN" in USER_GROUPS %}
+      <div class="nav-section">Administration</div>
+      <a class="nav-item" href="/parametres/">⚙️ Paramètres</a>
+      <a class="nav-item" href="/admin/">🔧 Admin Django</a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="userchip">
+        <div class="avatar">👤</div>
+        <div>
+          <div class="u-name">{{ user.username }}</div>
+          <div class="u-sub">{% for g in USER_GROUPS %}{{ g }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+        </div>
+      </div>
+      <a class="btn" href="/logout/" style="width:100%;justify-content:center">Se déconnecter</a>
+    </div>
+    {% endif %}
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-title">{% block title %}{% endblock %}</div>
+      <div class="topbar-actions">
+        {% block actions %}{% endblock %}
+        <button class="theme-chip" type="button" onclick="toggleTheme()">☀︎ / ☾</button>
+      </div>
+      <script>
+(function(){
+  const key = "ccam_theme";
+  const saved = localStorage.getItem(key) || "dark";
+  document.documentElement.setAttribute("data-theme", saved);
+  window.toggleTheme = function(){
+    const cur = document.documentElement.getAttribute("data-theme") || "dark";
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem(key, next);
+  };
+})();
+      </script>
+    </header>
+
+    <section class="content">
+      {% if messages %}
+      <div class="messages">
+        {% for m in messages %}
+        <div class="msg msg-{{ m.tags }}">{{ m }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </section>
+  </main>
+</div>
+
+<script>
+function addRow() {
+  const tmpl = document.getElementById('itemRowTemplate');
+  if (!tmpl) return;
+  const container = document.getElementById('itemsContainer');
+  const node = tmpl.content.cloneNode(true);
+  container.appendChild(node);
+}
+function removeRow(btn) {
+  const row = btn.closest('.row');
+  if (row) row.remove();
+  calcTotal();
+}
+function calcTotal() {
+  const inputs = document.querySelectorAll('input[name="item_amount[]"]');
+  let total = 0;
+  inputs.forEach(i => {
+    const n = parseFloat((i.value || '0').replace(',', '.'));
+    if (!isNaN(n)) total += n;
+  });
+  const out = document.getElementById('calcTotalOut');
+  if (out) out.textContent = total.toFixed(2);
+}
+</script>
+</body>
+</html>

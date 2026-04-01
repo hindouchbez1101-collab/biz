@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Fournisseurs{% endblock %}
+{% block actions %}
+  <a class="btn primary" href="/stock/fournisseurs/new/">+ Nouveau fournisseur</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr><th>Nom</th><th>Téléphone</th><th>Adresse</th><th>Statut</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for s in suppliers %}
+      <tr>
+        <td><b>{{ s.name }}</b></td>
+        <td class="muted">{{ s.phone|default:"—" }}</td>
+        <td class="muted" style="font-size:12px">{{ s.address|default:"—" }}</td>
+        <td>{% if s.is_active %}<span class="badge green">✓ Actif</span>{% else %}<span class="badge red">Inactif</span>{% endif %}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <a class="btn small" href="/stock/fournisseurs/{{ s.id }}/edit/">✏️ Modifier</a>
+            <a class="btn small" href="/stock/achats/?fournisseur={{ s.id }}">📦 Achats</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="muted" style="text-align:center;padding:36px">
+        <div style="font-size:28px;margin-bottom:10px;opacity:.4">🏭</div>
+        Aucun fournisseur enregistré.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

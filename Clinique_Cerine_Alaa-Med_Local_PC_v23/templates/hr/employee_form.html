@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{% if edit %}Modifier employé{% else %}Nouvel employé{% endif %}{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'employees_list' %}">← Employés</a>{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+<div class="cf-wrap">
+  {% if errors.general %}<div class="cf-alert">⚠ {{ errors.general }}</div>{% endif %}
+
+  <div class="cf-card">
+    <div class="cf-section-title">👥 {% if edit %}Modifier l'employé{% else %}Informations de l'employé{% endif %}</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid cols-2" style="gap:16px">
+
+        <div class="cf-field span-2">
+          <label class="cf-label">Nom complet <span class="req">*</span></label>
+          <input class="cf-input {% if errors.full_name %}error{% endif %}" type="text"
+            name="full_name"
+            value="{% if emp %}{{ emp.full_name }}{% else %}{{ vals.full_name|default:'' }}{% endif %}"
+            placeholder="ex : Bensalem Kheira">
+          {% if errors.full_name %}<span class="cf-error-msg">⚠ {{ errors.full_name }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Rôle / Poste <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="text" name="role"
+            value="{% if emp %}{{ emp.role }}{% else %}{{ vals.role|default:'' }}{% endif %}"
+            placeholder="ex : Sage-femme, Anesthésiste…">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Téléphone <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="tel" name="phone"
+            value="{% if emp %}{{ emp.phone }}{% else %}{{ vals.phone|default:'' }}{% endif %}"
+            placeholder="ex : 07 00 00 00 00">
+        </div>
+
+        <div class="cf-field span-2">
+          <hr class="cf-sep">
+          <div class="cf-toggle-row">
+            <label class="cf-toggle">
+              <input type="checkbox" name="is_active" value="1"
+                {% if emp %}{% if emp.is_active %}checked{% endif %}
+                {% elif not vals or vals.is_active == "1" %}checked{% endif %}>
+              <div class="cf-toggle-track"></div>
+              <div class="cf-toggle-thumb"></div>
+            </label>
+            <span class="cf-toggle-label">Employé actif</span>
+          </div>
+        </div>
+
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit">💾 {% if edit %}Enregistrer les modifications{% else %}Créer l'employé{% endif %}</button>
+        {% if edit %}
+        <button class="cf-btn-submit" type="submit" name="delete"
+          style="background:color-mix(in srgb,#ef4444 80%,transparent);border-color:#ef4444"
+          onclick="return confirm('Supprimer cet employé ? Ses salaires seront conservés.')">🗑 Supprimer</button>
+        {% endif %}
+        <a class="btn" href="{% url 'employees_list' %}">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/{{ patient.id }}/">← {{ patient.last_name }} {{ patient.first_name }}</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/dossiers.css">
+<div class="dm-wrap">
+
+  {% if form.errors %}
+  <div class="dm-errors">⚠️ {{ form.errors }}</div>
+  {% endif %}
+
+  <form method="post" id="examenForm">
+    {% csrf_token %}
+
+    <!-- En-tête : N°, Date, Type -->
+    <div class="dm-section">
+      <div class="dm-section-title">🔬 Identification de l'examen</div>
+      <div class="dm-fields cols-3">
+        <div class="dm-field">
+          <label class="dm-label">N° Examen (manuel) <span class="req">*</span></label>
+          <input class="dm-input" name="numero_manuel" id="numeroExamen" value="{{ form.numero_manuel.value|default:auto_numero }}" placeholder="{{ auto_numero }}" required>
+          <span style="font-size:11px;color:var(--dm-teal2);margin-top:3px">✨ Numéro auto — modifiable</span>
+        </div>
+        <div class="dm-field">
+          <label class="dm-label">Date de l'examen <span class="req">*</span></label>
+          <input class="dm-input" type="date" name="date_examen" value="{{ form.date_examen.value|default:'' }}" required>
+        </div>
+        <div class="dm-field">
+          <label class="dm-label">Patiente</label>
+          <div class="dm-input" style="background:color-mix(in srgb,var(--bg) 30%,transparent);cursor:default">
+            {{ patient.last_name }} {{ patient.first_name }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sélecteur de type visuel -->
+    <div class="dm-type-tabs">
+      <button type="button" class="dm-type-tab" data-type="ANAMNESE" onclick="selectType('ANAMNESE')">
+        <span class="tab-icon">📋</span>
+        <span class="tab-label">Anamnèse</span>
+        <span class="tab-desc">Antécédents &amp; examen clinique</span>
+      </button>
+      <button type="button" class="dm-type-tab" data-type="PARTOGRAMME" onclick="selectType('PARTOGRAMME')">
+        <span class="tab-icon">📊</span>
+        <span class="tab-label">Partogramme</span>
+        <span class="tab-desc">Surveillance du travail</span>
+      </button>
+      <button type="button" class="dm-type-tab" data-type="NOUVEAU_NE" onclick="selectType('NOUVEAU_NE')">
+        <span class="tab-icon">👶</span>
+        <span class="tab-label">Nouveau-né</span>
+        <span class="tab-desc">Examen du nouveau-né</span>
+      </button>
+    </div>
+    <input type="hidden" name="type_examen" id="typeExamenInput" value="{{ form.type_examen.value|default:'ANAMNESE' }}">
+
+    <!-- ═══ ANAMNÈSE ═════════════════════════════════════════════════════════ -->
+    <div class="dm-panel" id="panel-ANAMNESE">
+
+      <div class="dm-section">
+        <div class="dm-section-title">📅 Dates &amp; Antécédents (AT CD)</div>
+        <div class="dm-fields cols-2" style="margin-bottom:16px">
+          <div class="dm-field">
+            <label class="dm-label">Date de mariage</label>
+            <input class="dm-input" type="date" name="date_mariage" value="{{ form.date_mariage.value|default:'' }}">
+          </div>
+        </div>
+        <div class="dm-fields cols-2">
+          <div class="dm-field">
+            <label class="dm-label">AT CD Familiaux (AT CD F)</label>
+            <textarea class="dm-textarea" name="atcd_f" rows="2" placeholder="Antécédents familiaux…">{{ form.atcd_f.value|default:'' }}</textarea>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">AT CD Personnels (AT CD P)</label>
+            <textarea class="dm-textarea" name="atcd_p" rows="2" placeholder="Antécédents personnels…">{{ form.atcd_p.value|default:'' }}</textarea>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Antécédents Médecine</label>
+            <input class="dm-input" name="antecedent_med" value="{{ form.antecedent_med.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Antécédents Chirurgicaux</label>
+            <input class="dm-input" name="antecedent_chir" value="{{ form.antecedent_chir.value|default:'' }}">
+          </div>
+          <div class="dm-field span-2">
+            <label class="dm-label">Antécédents Obstétricaux</label>
+            <input class="dm-input" name="antecedent_obst" value="{{ form.antecedent_obst.value|default:'' }}">
+          </div>
+        </div>
+
+        <!-- G / P / Enfants vivants -->
+        <div class="dm-gpe" style="margin-top:16px">
+          <div class="dm-field">
+            <label class="dm-label">G — Grossesses</label>
+            <input class="dm-input" name="grossesse" value="{{ form.grossesse.value|default:'' }}" placeholder="0">
+          </div>
+          <div class="dm-gpe-sep">/</div>
+          <div class="dm-field">
+            <label class="dm-label">P — Parité</label>
+            <input class="dm-input" name="parite" value="{{ form.parite.value|default:'' }}" placeholder="0">
+          </div>
+          <div class="dm-gpe-sep">/</div>
+          <div class="dm-field">
+            <label class="dm-label">Enfants vivants</label>
+            <input class="dm-input" name="enfants_vivants" value="{{ form.enfants_vivants.value|default:'' }}" placeholder="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="dm-section">
+        <div class="dm-section-title">🩺 Examen clinique</div>
+        <div class="dm-fields cols-2" style="margin-bottom:14px">
+          <div class="dm-field">
+            <label class="dm-label">DDR</label>
+            <input class="dm-input" type="date" name="ddr" value="{{ form.ddr.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Groupage</label>
+            <input class="dm-input" name="groupage" value="{{ form.groupage.value|default:'' }}" placeholder="ex: A+">
+          </div>
+        </div>
+        <div class="dm-clinical-grid">
+          <div class="dm-field">
+            <label class="dm-label">TA</label>
+            <input class="dm-input" name="ta" value="{{ form.ta.value|default:'' }}" placeholder="mmHg">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">T°</label>
+            <input class="dm-input" name="temperature" value="{{ form.temperature.value|default:'' }}" placeholder="°C">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">HU</label>
+            <input class="dm-input" name="hu" value="{{ form.hu.value|default:'' }}" placeholder="cm">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">CU</label>
+            <input class="dm-input" name="cu" value="{{ form.cu.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">TV</label>
+            <input class="dm-input" name="tv" value="{{ form.tv.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">SPL</label>
+            <input class="dm-input" name="spl" value="{{ form.spl.value|default:'' }}">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">BCF</label>
+            <input class="dm-input" name="bcf" value="{{ form.bcf.value|default:'' }}" placeholder="bpm">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">ERCF</label>
+            <input class="dm-input" name="ercf" value="{{ form.ercf.value|default:'' }}">
+          </div>
+        </div>
+        <div class="dm-fields cols-2" style="margin-top:12px">
+          <div class="dm-field">
+            <label class="dm-label">État général</label>
+            <input class="dm-input" name="etat_general" value="{{ form.etat_general.value|default:'' }}" placeholder="ex: Bon, stable…">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">ECHO</label>
+            <input class="dm-input" name="echo" value="{{ form.echo.value|default:'' }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="dm-section">
+        <div class="dm-section-title">📝 Conclusion &amp; CAT</div>
+        <div class="dm-fields cols-2">
+          <div class="dm-field span-2">
+            <label class="dm-label">Avis réanimation-anesthésie</label>
+            <textarea class="dm-textarea" name="avis_reanima" rows="2">{{ form.avis_reanima.value|default:'' }}</textarea>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Conclusion</label>
+            <textarea class="dm-textarea" name="conclusion" rows="3">{{ form.conclusion.value|default:'' }}</textarea>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">CAT</label>
+            <textarea class="dm-textarea" name="cat" rows="3">{{ form.cat.value|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PARTOGRAMME ══════════════════════════════════════════════════════ -->
+    <div class="dm-panel" id="panel-PARTOGRAMME">
+      <div class="dm-section">
+        <div class="dm-section-title">📊 Surveillance du travail</div>
+        <div class="dm-field" style="margin-bottom:14px">
+          <label class="dm-label">Sage-femme / Médecin</label>
+          <input class="dm-input" name="sage_femme" value="{{ form.sage_femme.value|default:'' }}" placeholder="Nom de la sage-femme ou du médecin">
+        </div>
+        <div class="dm-partogramme-hint">
+          📋 Colonnes : <b>Heures</b> | <b>TV</b> | <b>CU</b> | <b>Col</b> | <b>Dilatation</b> | <b>Présentation</b> | <b>PDE</b> | <b>BCF</b> | <b>PA</b> | <b>T°</b> | <b>Autre données de l'examen</b><br>
+          Saisissez chaque mesure sur une ligne séparée.
+        </div>
+        <div class="dm-field">
+          <label class="dm-label">Données de surveillance</label>
+          <textarea class="dm-textarea" name="partogramme_notes" rows="10" style="font-family:monospace;font-size:13px" placeholder="08h00 | TV: 3cm | CU: 3/10 | Col: 3cm effacé | Dilat: 3cm | Prés: céph | PDE: int | BCF: 140 | PA: 120/80 | T°: 37.2&#10;09h00 | ...">{{ form.partogramme_notes.value|default:'' }}</textarea>
+        </div>
+        <div class="dm-field" style="margin-top:14px">
+          <label class="dm-label">Prescription</label>
+          <textarea class="dm-textarea" name="prescription" rows="3" placeholder="Traitements prescrits…">{{ form.prescription.value|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ NOUVEAU-NÉ ═══════════════════════════════════════════════════════ -->
+    <div class="dm-panel" id="panel-NOUVEAU_NE">
+      <div class="dm-section">
+        <div class="dm-section-title">👶 Examen du nouveau-né</div>
+        <div class="dm-clinical-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="dm-field">
+            <label class="dm-label">Sexe</label>
+            <select class="dm-input" name="nn_sexe">
+              <option value="">—</option>
+              <option value="Masculin"  {% if form.nn_sexe.value == "Masculin" %}selected{% endif %}>♂ Masculin</option>
+              <option value="Féminin"   {% if form.nn_sexe.value == "Féminin" %}selected{% endif %}>♀ Féminin</option>
+            </select>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Poids (g)</label>
+            <input class="dm-input" name="nn_poids" value="{{ form.nn_poids.value|default:'' }}" placeholder="ex: 3200">
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Score Apgar (1min / 5min)</label>
+            <input class="dm-input" name="nn_apgar" value="{{ form.nn_apgar.value|default:'' }}" placeholder="ex: 8/10">
+          </div>
+        </div>
+        <div class="dm-field" style="margin-top:14px">
+          <label class="dm-label">Observations</label>
+          <textarea class="dm-textarea" name="nn_notes" rows="4" placeholder="État général, anomalies éventuelles, réanimation…">{{ form.nn_notes.value|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes complémentaires (commun) -->
+    <div class="dm-section" style="margin-top:0">
+      <div class="dm-section-title">📝 Notes complémentaires</div>
+      <textarea class="dm-textarea" name="notes" rows="2" placeholder="Toute information utile…">{{ form.notes.value|default:'' }}</textarea>
+    </div>
+
+    <div class="dm-nav-row">
+      <a class="dm-btn ghost" href="/patients/{{ patient.id }}/">Annuler</a>
+      <button type="submit" class="dm-btn primary">💾 Enregistrer l'examen</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const AUTO_PREFIXES = {ANAMNESE:"EX-ANAMNESE", PARTOGRAMME:"EX-PARTOGRAMME", NOUVEAU_NE:"EX-NOUVEAU_NE"};
+function selectType(t) {
+  document.getElementById('typeExamenInput').value = t;
+  document.querySelectorAll('.dm-type-tab').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.type === t);
+  });
+  document.querySelectorAll('.dm-panel[id^="panel-"]').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + t);
+  if (panel) panel.classList.add('active');
+}
+// Init
+const init = document.getElementById('typeExamenInput').value || 'ANAMNESE';
+selectType(init);
+</script>
+{% endblock %}

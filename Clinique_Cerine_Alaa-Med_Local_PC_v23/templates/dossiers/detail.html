@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Dossier {{ d.numero }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/{{ d.patient_id }}/">← Retour patient</a>
+  <a class="btn" href="/dossiers/{{ d.id }}/edit/">✏️ Modifier</a>
+  <a class="btn" href="/examens/patients/{{ d.patient_id }}/new/">+ Examen</a>
+  {% if not d.date_sortie %}
+  <a class="btn primary" href="/dossiers/{{ d.id }}/sortie/" style="background:var(--accent2);border-color:var(--accent2)">🏁 Enregistrer la sortie →</a>
+  {% else %}
+  <a class="btn green" href="/encaissements/caisse/?patient_id={{ d.patient_id }}&dossier_id={{ d.id }}">💰 Aller à la caisse</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/dossiers.css">
+<div class="dm-wrap">
+
+  <!-- En-tête dossier -->
+  <div class="dm-detail-header type-{{ d.type_dossier }}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+      <div>
+        <div class="dm-detail-eyebrow">Établissement Hospitalier Privé CERINE Alaa-Med</div>
+        <div class="dm-detail-title">
+          {% if d.type_dossier == "CHIFA" %}Dossier Maternité Chifa ACC
+          {% elif d.type_dossier == "MILITAIRE" %}Dossier Maternité Militaire
+          {% else %}Dossier Maternité Général{% endif %}
+        </div>
+        <div class="dm-detail-num">N° {{ d.numero }}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="dm-badge type-{{ d.type_dossier }}">
+          {% if d.type_dossier == "CHIFA" %}🟢 Chifa ACC
+          {% elif d.type_dossier == "MILITAIRE" %}🔵 Militaire
+          {% else %}🟣 Général{% endif %}
+        </span>
+        {% if d.num_ass %}
+        <span style="font-size:12px;color:var(--muted)">🪪 {{ d.num_ass }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="dm-detail-grid">
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Patiente</div>
+        <div class="dm-kv-val">{{ d.nom }} {{ d.prenom }}</div>
+      </div>
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Date de naissance</div>
+        <div class="dm-kv-val {% if not d.date_naissance %}empty{% endif %}">
+          {% if d.date_naissance %}{{ d.date_naissance|date:"d/m/Y" }}{% else %}Non renseignée{% endif %}
+        </div>
+      </div>
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Lieu de naissance</div>
+        <div class="dm-kv-val {% if not d.lieu_naissance %}empty{% endif %}">{{ d.lieu_naissance|default:"Non renseigné" }}</div>
+      </div>
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Époux</div>
+        <div class="dm-kv-val {% if not d.epoux %}empty{% endif %}">{{ d.epoux|default:"Non renseigné" }}</div>
+      </div>
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Médecin</div>
+        <div class="dm-kv-val {% if not d.medecin %}empty{% endif %}">{{ d.medecin|default:"Non renseigné" }}</div>
+      </div>
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Service</div>
+        <div class="dm-kv-val {% if not d.service %}empty{% endif %}">{{ d.service|default:"Non renseigné" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grille 2 colonnes -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+    <!-- Prise en charge -->
+    <div class="dm-detail-section">
+      <div class="dm-detail-section-title">🏥 Prise en charge</div>
+      <div class="dm-kv-row"><span class="k">Diagnostic</span><span class="v {% if not d.diagnostic %}em{% endif %}">{{ d.diagnostic|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">Date d'entrée</span><span class="v {% if not d.date_entree %}em{% endif %}">{% if d.date_entree %}{{ d.date_entree|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="dm-kv-row"><span class="k">Date d'intervention</span><span class="v {% if not d.date_intervention %}em{% endif %}">{% if d.date_intervention %}{{ d.date_intervention|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="dm-kv-row"><span class="k">Date de sortie</span><span class="v {% if not d.date_sortie %}em{% endif %}">{% if d.date_sortie %}{{ d.date_sortie|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="dm-kv-row"><span class="k">Date dépôt dossier</span><span class="v {% if not d.date_depot %}em{% endif %}">{% if d.date_depot %}{{ d.date_depot|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+    </div>
+
+    <!-- Autorisation -->
+    <div class="dm-detail-section">
+      <div class="dm-detail-section-title">✍️ Autorisation d'opérer</div>
+      <div class="dm-kv-row"><span class="k">Tuteur / Mari</span><span class="v {% if not d.tuteur_nom %}em{% endif %}">{{ d.tuteur_nom|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">Adresse</span><span class="v {% if not d.tuteur_adresse %}em{% endif %}">{{ d.tuteur_adresse|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">Téléphone</span><span class="v {% if not d.tuteur_tel %}em{% endif %}">{{ d.tuteur_tel|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">CN/PQ N°</span><span class="v {% if not d.cn_pq_no %}em{% endif %}">{{ d.cn_pq_no|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">Délivré le</span><span class="v {% if not d.cn_delivre_le %}em{% endif %}">{% if d.cn_delivre_le %}{{ d.cn_delivre_le|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      {% if d.diagnostic_autorisation %}
+      <div style="margin-top:10px;padding:10px;background:color-mix(in srgb,var(--bg) 50%,transparent);border-radius:10px;font-size:13px;color:var(--muted);font-style:italic">
+        {{ d.diagnostic_autorisation }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if d.notes %}
+  <div class="dm-detail-section" style="margin-top:0">
+    <div class="dm-detail-section-title">📝 Notes</div>
+    <p style="font-size:14px;line-height:1.7;margin:0">{{ d.notes }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Examens liés -->
+  <div class="dm-detail-section">
+    <div class="dm-detail-section-title">🔬 Examens de cette patiente</div>
+    {% if examens %}
+    <div class="dm-timeline">
+      {% for e in examens %}
+      <div class="dm-timeline-item">
+        <div class="dm-timeline-dot {{ e.type_examen }}">
+          {% if e.type_examen == "ANAMNESE" %}📋
+          {% elif e.type_examen == "PARTOGRAMME" %}📊
+          {% else %}👶{% endif %}
+        </div>
+        <div class="dm-timeline-content">
+          <div class="dm-timeline-type">{{ e.get_type_examen_display }}</div>
+          <div class="dm-timeline-num">N° {{ e.numero_manuel }}</div>
+          <div class="dm-timeline-date">{{ e.date_examen|date:"d/m/Y" }}</div>
+        </div>
+        <div class="dm-timeline-actions">
+          <a class="dm-btn sm" href="/examens/{{ e.id }}/">Voir</a>
+          <a class="dm-btn sm ghost" href="/examens/{{ e.id }}/edit/">✏️</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:24px;color:var(--muted);font-size:14px">
+      Aucun examen enregistré pour cette patiente.
+    </div>
+    {% endif %}
+    <div style="margin-top:14px">
+      <a class="dm-btn" href="/examens/patients/{{ d.patient_id }}/new/">+ Ajouter un examen</a>
+    </div>
+  </div>
+
+  <!-- Méta -->
+  <div style="text-align:right;font-size:11px;color:var(--muted);padding:4px 0">
+    Créé le {{ d.created_at|date:"d/m/Y à H:i" }} — Modifié le {{ d.updated_at|date:"d/m/Y à H:i" }}
+  </div>
+
+</div>
+{% endblock %}

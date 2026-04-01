@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Rendez-vous{% endblock %}
+{% block actions %}
+  <a class="btn primary" href="/rdv/new/">+ Nouveau RDV</a>
+{% endblock %}
+{% block content %}
+
+<!-- Navigation par jour -->
+<div class="card" style="padding:14px 18px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="btn small" href="/rdv/?day={{ prev_day|date:'Y-m-d' }}">‹ Veille</a>
+      <form method="get" style="display:flex;gap:8px;align-items:center">
+        <input class="input" type="date" name="day" value="{{ day|date:'Y-m-d' }}" style="border-radius:100px;width:160px">
+        <button class="btn" type="submit">Afficher</button>
+      </form>
+      <a class="btn small" href="/rdv/?day={{ next_day|date:'Y-m-d' }}">Lendemain ›</a>
+      {% if day != today %}<a class="btn small green" href="/rdv/">Aujourd'hui</a>{% endif %}
+    </div>
+    <div style="font-family:var(--font-serif);font-style:italic;font-size:18px">
+      {{ day|date:"l d/m/Y" }}
+    </div>
+  </div>
+
+  <!-- Compteurs statuts -->
+  <div style="display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+      <span class="badge blue">{{ stats.confirmed }}</span> Confirmé(s)
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+      <span class="badge green">{{ stats.done }}</span> Terminé(s)
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+      <span class="badge amber">{{ stats.pending }}</span> En attente
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+      <span class="badge red">{{ stats.cancelled }}</span> Annulé(s)
+    </div>
+    <div style="margin-left:auto;font-size:13px;color:var(--muted)">
+      Total : <b style="color:var(--text)">{{ appointments|length }}</b> RDV
+    </div>
+  </div>
+</div>
+
+<!-- Liste RDV -->
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr><th>Heure</th><th>Patient</th><th>Type de soin</th><th>Médecin</th><th>Note</th><th>Statut</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for r in appointments %}
+      <tr>
+        <td><b style="font-size:15px">{{ r.start_at|date:"H:i" }}</b></td>
+        <td>
+          <a href="/patients/{{ r.patient.id }}/" style="font-weight:600">{{ r.patient.last_name }} {{ r.patient.first_name }}</a>
+          <div class="muted" style="font-size:11px">📞 {{ r.patient.phone }}</div>
+        </td>
+        <td>{{ r.get_service_type_display }}</td>
+        <td class="muted">{% if r.doctor %}{{ r.doctor.full_name }}{% else %}—{% endif %}</td>
+        <td class="muted" style="font-size:12px">{{ r.note|default:"—" }}</td>
+        <td>
+          {% if r.status == "CONFIRMED" %}<span class="badge blue">Confirmé</span>
+          {% elif r.status == "DONE" %}<span class="badge green">Terminé</span>
+          {% elif r.status == "CANCELLED" %}<span class="badge red">Annulé</span>
+          {% else %}<span class="badge amber">En attente</span>{% endif %}
+        </td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <a class="btn small" href="/rdv/{{ r.id }}/edit/">✏️ Modifier</a>
+            <a class="btn small primary" href="/encaissements/new/">💰</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="muted" style="text-align:center;padding:36px">
+        <div style="font-size:28px;margin-bottom:10px;opacity:.4">📅</div>
+        Aucun rendez-vous le {{ day|date:"d/m/Y" }}.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

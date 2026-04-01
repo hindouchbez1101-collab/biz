@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Compléter — {{ e.get_type_examen_display }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="/examens/{{ e.id }}/">← Examen</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<div class="cf-card" style="margin-bottom:16px;border-left:4px solid
+  {% if e.type_examen == 'ANAMNESE' %}var(--accent)
+  {% elif e.type_examen == 'PARTOGRAMME' %}#f59e0b
+  {% else %}#f43f5e{% endif %}">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">
+        Complétion post-naissance
+      </div>
+      <div style="font-family:var(--font-serif);font-style:italic;font-size:20px">
+        {% if e.type_examen == "ANAMNESE" %}📋{% elif e.type_examen == "PARTOGRAMME" %}📊{% else %}👶{% endif %}
+        {{ e.get_type_examen_display }}
+      </div>
+      <div class="muted" style="font-size:13px;margin-top:2px">
+        N° {{ e.numero_manuel }} · {{ e.patient }}
+      </div>
+    </div>
+    <div>
+      <span class="badge {% if e.type_examen == 'ANAMNESE' %}blue{% elif e.type_examen == 'PARTOGRAMME' %}amber{% else %}red{% endif %}">
+        {{ e.get_type_examen_display }}
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="cf-card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="cf-grid" style="gap:16px">
+
+      <div class="cf-field">
+        <label class="cf-label">Date de l'examen</label>
+        <input class="cf-input" type="date" name="date_examen"
+          value="{{ e.date_examen|date:'Y-m-d' }}">
+      </div>
+
+      {% if e.type_examen == "ANAMNESE" %}
+      <!-- ══ ANAMNÈSE ══ -->
+      <div class="cf-section-title span-full" style="margin:0;padding:0 0 8px;border-bottom:1px solid var(--line);color:var(--accent)">
+        🩺 Examen clinique
+      </div>
+
+      <div class="cf-field">
+        <label class="cf-label">DDR</label>
+        <input class="cf-input" type="date" name="ddr"
+          value="{{ e.ddr|date:'Y-m-d'|default:'' }}">
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">Groupage</label>
+        <input class="cf-input" type="text" name="groupage"
+          value="{{ e.groupage|default:'' }}" placeholder="ex : A+">
+      </div>
+
+      <!-- Grille des 8 valeurs cliniques -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" class="span-full">
+        <div class="cf-field"><label class="cf-label">TA</label>
+          <input class="cf-input" type="text" name="ta" value="{{ e.ta|default:'' }}" placeholder="mmHg"></div>
+        <div class="cf-field"><label class="cf-label">T°</label>
+          <input class="cf-input" type="text" name="temperature" value="{{ e.temperature|default:'' }}" placeholder="°C"></div>
+        <div class="cf-field"><label class="cf-label">HU</label>
+          <input class="cf-input" type="text" name="hu" value="{{ e.hu|default:'' }}" placeholder="cm"></div>
+        <div class="cf-field"><label class="cf-label">CU</label>
+          <input class="cf-input" type="text" name="cu" value="{{ e.cu|default:'' }}"></div>
+        <div class="cf-field"><label class="cf-label">TV</label>
+          <input class="cf-input" type="text" name="tv" value="{{ e.tv|default:'' }}"></div>
+        <div class="cf-field"><label class="cf-label">SPL</label>
+          <input class="cf-input" type="text" name="spl" value="{{ e.spl|default:'' }}"></div>
+        <div class="cf-field"><label class="cf-label">BCF</label>
+          <input class="cf-input" type="text" name="bcf" value="{{ e.bcf|default:'' }}" placeholder="bpm"></div>
+        <div class="cf-field"><label class="cf-label">ERCF</label>
+          <input class="cf-input" type="text" name="ercf" value="{{ e.ercf|default:'' }}"></div>
+      </div>
+
+      <div class="cf-field">
+        <label class="cf-label">État général</label>
+        <input class="cf-input" type="text" name="etat_general"
+          value="{{ e.etat_general|default:'' }}" placeholder="ex : Bon, stable…">
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">ECHO</label>
+        <input class="cf-input" type="text" name="echo" value="{{ e.echo|default:'' }}">
+      </div>
+
+      <div style="display:flex;gap:12px" class="span-full">
+        <div class="cf-field" style="flex:1">
+          <label class="cf-label">G</label>
+          <input class="cf-input" type="text" name="grossesse" value="{{ e.grossesse|default:'' }}" placeholder="0" style="text-align:center">
+        </div>
+        <div style="font-size:22px;color:var(--muted);padding-top:28px;font-weight:300">/</div>
+        <div class="cf-field" style="flex:1">
+          <label class="cf-label">P</label>
+          <input class="cf-input" type="text" name="parite" value="{{ e.parite|default:'' }}" placeholder="0" style="text-align:center">
+        </div>
+        <div style="font-size:22px;color:var(--muted);padding-top:28px;font-weight:300">/</div>
+        <div class="cf-field" style="flex:1">
+          <label class="cf-label">Enfants vivants</label>
+          <input class="cf-input" type="text" name="enfants_vivants" value="{{ e.enfants_vivants|default:'' }}" placeholder="0" style="text-align:center">
+        </div>
+      </div>
+
+      <div class="cf-field span-full">
+        <label class="cf-label">Avis réanimation-anesthésie</label>
+        <textarea class="cf-textarea" name="avis_reanima" rows="2">{{ e.avis_reanima|default:'' }}</textarea>
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">Conclusion</label>
+        <textarea class="cf-textarea" name="conclusion" rows="3">{{ e.conclusion|default:'' }}</textarea>
+      </div>
+      <div class="cf-field">
+        <label class="cf-label">CAT</label>
+        <textarea class="cf-textarea" name="cat" rows="3">{{ e.cat|default:'' }}</textarea>
+      </div>
+
+      {% elif e.type_examen == "PARTOGRAMME" %}
+      <!-- ══ PARTOGRAMME ══ -->
+      <div class="cf-field span-full">
+        <label class="cf-label">Sage-femme / Médecin</label>
+        <input class="cf-input" type="text" name="sage_femme"
+          value="{{ e.sage_femme|default:'' }}" placeholder="Nom de la sage-femme ou du médecin">
+      </div>
+      <div class="cf-field span-full">
+        <label class="cf-label">Données de surveillance du travail</label>
+        <div class="cf-hint" style="margin-bottom:6px">Heures | TV | CU | Col | Dilatation | Présentation | PDE | BCF | PA | T° | Autres</div>
+        <textarea class="cf-textarea" name="partogramme_notes" rows="10"
+          style="font-family:monospace;font-size:13px"
+          placeholder="08h00 | TV: 3cm | CU: 3/10 | Col: 3cm | Dilat: 3cm | …">{{ e.partogramme_notes|default:'' }}</textarea>
+      </div>
+      <div class="cf-field span-full">
+        <label class="cf-label">Prescription</label>
+        <textarea class="cf-textarea" name="prescription" rows="3"
+          placeholder="Traitements prescrits…">{{ e.prescription|default:'' }}</textarea>
+      </div>
+
+      {% elif e.type_examen == "NOUVEAU_NE" %}
+      <!-- ══ NOUVEAU-NÉ ══ -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px" class="span-full">
+        <div class="cf-field">
+          <label class="cf-label">Sexe</label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="nn_sexe">
+              <option value="">—</option>
+              <option value="Masculin" {% if e.nn_sexe == "Masculin" %}selected{% endif %}>♂ Masculin</option>
+              <option value="Féminin"  {% if e.nn_sexe == "Féminin" %}selected{% endif %}>♀ Féminin</option>
+            </select>
+          </div>
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Poids (g)</label>
+          <input class="cf-input" type="number" name="nn_poids"
+            value="{{ e.nn_poids|default:'' }}" placeholder="ex : 3200">
+        </div>
+        <div class="cf-field">
+          <label class="cf-label">Score Apgar (1min/5min)</label>
+          <input class="cf-input" type="text" name="nn_apgar"
+            value="{{ e.nn_apgar|default:'' }}" placeholder="ex : 8/10">
+        </div>
+      </div>
+      <div class="cf-field span-full">
+        <label class="cf-label">Observations</label>
+        <textarea class="cf-textarea" name="nn_notes" rows="4"
+          placeholder="État général, anomalies, réanimation…">{{ e.nn_notes|default:'' }}</textarea>
+      </div>
+      {% endif %}
+
+      <div class="cf-field span-full">
+        <label class="cf-label">Notes complémentaires <span class="opt">(optionnel)</span></label>
+        <textarea class="cf-textarea" name="notes" rows="2"
+          placeholder="Informations utiles…">{{ e.notes|default:'' }}</textarea>
+      </div>
+
+    </div>
+    <div class="cf-actions">
+      <button class="cf-btn-submit" type="submit">💾 Enregistrer la complétion</button>
+      <a class="btn" href="/examens/{{ e.id }}/">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

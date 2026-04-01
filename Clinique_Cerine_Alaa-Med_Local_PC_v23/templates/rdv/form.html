@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block actions %}<a class="btn" href="/rdv/">← Rendez-vous</a>{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+<div class="cf-wrap">
+  {% if errors.general %}<div class="cf-alert">⚠ {{ errors.general }}</div>{% endif %}
+
+  <div class="cf-card">
+    <div class="cf-section-title">📅 Nouveau rendez-vous</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid cols-2">
+
+        <!-- Patient avec recherche -->
+        <div class="cf-field span-2">
+          <label class="cf-label">Patient <span class="req">*</span></label>
+          <div class="cf-autocomplete">
+            <input class="cf-input {% if errors.patient_id %}error{% endif %}"
+              type="text" id="patientSearch"
+              placeholder="🔍  Rechercher par nom ou téléphone…"
+              autocomplete="off"
+              value="{% if rdv %}{{ rdv.patient.last_name }} {{ rdv.patient.first_name }} — {{ rdv.patient.phone }}{% endif %}">
+            <input type="hidden" name="patient_id" id="patientId"
+              value="{% if rdv %}{{ rdv.patient_id }}{% else %}{{ vals.patient_id|default:'' }}{% endif %}">
+            <div class="cf-ac-dropdown" id="patientDropdown">
+              {% for p in patients %}
+              <div class="cf-ac-item" data-id="{{ p.id }}" data-label="{{ p.last_name }} {{ p.first_name }} — {{ p.phone }}">
+                <div class="name">{{ p.last_name }} {{ p.first_name }}</div>
+                <div class="phone">📞 {{ p.phone }}</div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% if errors.patient_id %}<span class="cf-error-msg">⚠ {{ errors.patient_id }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Date &amp; heure <span class="req">*</span></label>
+          <input class="cf-input {% if errors.start_at %}error{% endif %}"
+            type="datetime-local" name="start_at"
+            value="{% if rdv %}{{ rdv.start_at|date:'Y-m-d' }}T{{ rdv.start_at|date:'H:i' }}{% else %}{{ vals.start_at|default:'' }}{% endif %}">
+          {% if errors.start_at %}<span class="cf-error-msg">⚠ {{ errors.start_at }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Type de soin <span class="req">*</span></label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="service_type">
+              <option value="">— Sélectionner —</option>
+              {% for val, label in service_types %}
+              <option value="{{ val }}"
+                {% if rdv and rdv.service_type == val %}selected
+                {% elif vals.service_type == val %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Médecin <span class="opt">(optionnel)</span></label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="doctor_id">
+              <option value="">— Aucun —</option>
+              {% for d in doctors %}
+              <option value="{{ d.id }}"
+                {% if rdv and rdv.doctor_id == d.id %}selected
+                {% elif vals.doctor_id == d.id|stringformat:'s' %}selected{% endif %}>
+                {{ d.full_name }}{% if d.specialty %} — {{ d.specialty }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Statut</label>
+          <div class="cf-select-wrap">
+            <select class="cf-select" name="status">
+              {% for val, label in statuses %}
+              <option value="{{ val }}"
+                {% if rdv and rdv.status == val %}selected
+                {% elif not rdv and val == "CONFIRMED" %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="cf-field span-2">
+          <label class="cf-label">Note <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="text" name="note"
+            value="{% if rdv %}{{ rdv.note }}{% else %}{{ vals.note|default:'' }}{% endif %}"
+            placeholder="Information complémentaire…">
+        </div>
+
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit">💾 Enregistrer le RDV</button>
+        <a class="btn" href="/rdv/">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  const search = document.getElementById('patientSearch');
+  const hidden = document.getElementById('patientId');
+  const drop = document.getElementById('patientDropdown');
+  const items = drop.querySelectorAll('.cf-ac-item');
+
+  search.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    hidden.value = '';
+    let visible = 0;
+    items.forEach(item => {
+      const label = item.dataset.label.toLowerCase();
+      const show = !q || label.includes(q);
+      item.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    drop.classList.toggle('open', q.length > 0 && visible > 0);
+  });
+
+  items.forEach(item => {
+    item.addEventListener('click', function() {
+      search.value = this.dataset.label;
+      hidden.value = this.dataset.id;
+      drop.classList.remove('open');
+    });
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!search.contains(e.target) && !drop.contains(e.target)) {
+      drop.classList.remove('open');
+    }
+  });
+})();
+</script>
+{% endblock %}

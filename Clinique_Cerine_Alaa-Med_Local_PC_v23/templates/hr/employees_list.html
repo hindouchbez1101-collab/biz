@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Employés{% endblock %}
+{% block actions %}
+  <a class="btn" href="{% url 'salaries_dashboard' %}">💼 Salaires</a>
+  <a class="btn primary" href="{% url 'employee_new' %}">+ Nouvel employé</a>
+{% endblock %}
+{% block content %}
+
+<div class="grid-3">
+  <div class="card kpi-accent-blue">
+    <div class="card-label">Total employés</div>
+    <div class="card-kpi">{{ stats.total }}</div>
+  </div>
+  <div class="card kpi-accent-green">
+    <div class="card-label">Actifs</div>
+    <div class="card-kpi">{{ stats.active }}</div>
+  </div>
+  <div class="card kpi-accent-amber">
+    <div class="card-label">Inactifs</div>
+    <div class="card-kpi">{{ stats.inactive }}</div>
+  </div>
+</div>
+
+<div class="card">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nom complet</th>
+        <th>Rôle</th>
+        <th>Téléphone</th>
+        <th>Statut</th>
+        <th style="text-align:right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in employees %}
+      <tr>
+        <td><b>{{ e.full_name }}</b></td>
+        <td class="muted">{{ e.role|default:"—" }}</td>
+        <td class="muted">{{ e.phone|default:"—" }}</td>
+        <td>
+          {% if e.is_active %}
+            <span class="badge green">✓ Actif</span>
+          {% else %}
+            <span class="badge red">Inactif</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right">
+          <a class="btn small" href="/rh/employes/{{ e.id }}/edit/">✏️ Modifier / Supprimer</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="muted" style="text-align:center;padding:36px">
+          <div style="font-size:28px;margin-bottom:10px;opacity:.4">👥</div>
+          Aucun employé enregistré.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

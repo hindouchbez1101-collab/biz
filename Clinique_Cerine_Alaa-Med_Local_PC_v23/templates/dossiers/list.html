@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Dossiers Maternité{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/">Choisir une patiente</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/dossiers.css">
+<div class="dm-wrap">
+
+  <div class="dm-search-bar">
+    <form method="get" style="display:flex;gap:10px;flex:1;flex-wrap:wrap;align-items:center">
+      <input class="dm-search-input" name="q" value="{{ q }}" placeholder="🔍  Rechercher par N°, nom, téléphone…">
+      <select class="dm-select" name="type">
+        <option value="">Tous les types</option>
+        <option value="GENERAL"   {% if request.GET.type == "GENERAL" %}selected{% endif %}>Général</option>
+        <option value="CHIFA"     {% if request.GET.type == "CHIFA" %}selected{% endif %}>Chifa ACC</option>
+        <option value="MILITAIRE" {% if request.GET.type == "MILITAIRE" %}selected{% endif %}>Militaire</option>
+      </select>
+      <button class="dm-btn primary" type="submit">Filtrer</button>
+      {% if q or request.GET.type %}<a class="dm-btn ghost" href="/dossiers/">Effacer</a>{% endif %}
+    </form>
+    <div style="font-size:13px;color:var(--muted);white-space:nowrap">{{ dossiers|length }} dossier(s)</div>
+  </div>
+
+  <div class="dm-grid">
+    {% for d in dossiers %}
+    <a class="dm-card type-{{ d.type_dossier }}" href="/dossiers/{{ d.id }}/">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <span class="dm-badge type-{{ d.type_dossier }}">
+          {% if d.type_dossier == "CHIFA" %}🟢 Chifa ACC
+          {% elif d.type_dossier == "MILITAIRE" %}🔵 Militaire
+          {% else %}🟣 Général{% endif %}
+        </span>
+        <span style="font-size:11px;color:var(--muted)">{{ d.created_at|date:"d/m/Y" }}</span>
+      </div>
+      <div class="dm-card-num">N° {{ d.numero }}</div>
+      <div class="dm-card-name">{{ d.nom }} {{ d.prenom }}</div>
+      <div class="dm-card-meta">
+        {% if d.medecin %}<div class="dm-card-meta-item">👨‍⚕️ <b>{{ d.medecin }}</b></div>{% endif %}
+        {% if d.date_entree %}<div class="dm-card-meta-item">📅 Entrée <b>{{ d.date_entree|date:"d/m/Y" }}</b></div>{% endif %}
+        {% if d.date_sortie %}<div class="dm-card-meta-item">🏁 Sortie <b>{{ d.date_sortie|date:"d/m/Y" }}</b></div>{% endif %}
+        {% if d.num_ass %}<div class="dm-card-meta-item">🪪 <b>{{ d.num_ass }}</b></div>{% endif %}
+      </div>
+      <div class="dm-card-footer">
+        <span style="font-size:12px;color:var(--muted)">{{ d.patient }}</span>
+        <span class="dm-btn sm">Voir →</span>
+      </div>
+    </a>
+    {% empty %}
+    <div class="dm-empty">
+      <div class="dm-empty-icon">🗂️</div>
+      <div class="dm-empty-text">Aucun dossier trouvé.<br>
+        <a href="/patients/" style="color:var(--dm-teal2)">Sélectionnez une patiente</a> pour créer son dossier.
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

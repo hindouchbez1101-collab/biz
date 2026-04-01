@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Examen {{ e.numero_manuel }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/{{ e.patient_id }}/">← Retour patient</a>
+  <a class="btn" href="/examens/{{ e.id }}/completer/" style="background:color-mix(in srgb,var(--accent2) 18%,transparent);border-color:color-mix(in srgb,var(--accent2) 35%,transparent);color:var(--accent2)">✏️ Compléter</a>
+  <a class="btn" href="/examens/{{ e.id }}/edit/">Modifier</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/dossiers.css">
+<div class="dm-wrap">
+
+  <!-- En-tête -->
+  <div class="dm-detail-header type-GENERAL" style="border-left:none">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+      <div>
+        <div class="dm-detail-eyebrow">Établissement Hospitalier Privé CERINE Alaa-Med</div>
+        <div class="dm-detail-title">{{ e.get_type_examen_display }}</div>
+        <div class="dm-detail-num">N° {{ e.numero_manuel }} — {{ e.date_examen|date:"d/m/Y" }}</div>
+      </div>
+      <div style="font-size:14px">
+        <span style="color:var(--muted)">Patiente : </span>
+        <a href="/patients/{{ e.patient_id }}/" style="font-weight:700">{{ e.patient }}</a>
+      </div>
+    </div>
+  </div>
+
+  {% if e.type_examen == "ANAMNESE" %}
+  <!-- ═══ ANAMNÈSE ═════════════════════════════════════════════════════════ -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="dm-detail-section">
+      <div class="dm-detail-section-title">📅 Antécédents</div>
+      <div class="dm-kv-row"><span class="k">Date de mariage</span><span class="v {% if not e.date_mariage %}em{% endif %}">{% if e.date_mariage %}{{ e.date_mariage|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="dm-kv-row"><span class="k">AT CD Familiaux</span><span class="v {% if not e.atcd_f %}em{% endif %}">{{ e.atcd_f|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">AT CD Personnels</span><span class="v {% if not e.atcd_p %}em{% endif %}">{{ e.atcd_p|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">Antéc. Médecine</span><span class="v {% if not e.antecedent_med %}em{% endif %}">{{ e.antecedent_med|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">Antéc. Chirurgicaux</span><span class="v {% if not e.antecedent_chir %}em{% endif %}">{{ e.antecedent_chir|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">Antéc. Obstétricaux</span><span class="v {% if not e.antecedent_obst %}em{% endif %}">{{ e.antecedent_obst|default:"—" }}</span></div>
+      <div class="dm-kv-row">
+        <span class="k">G / P / Enfants vivants</span>
+        <span class="v">
+          {{ e.grossesse|default:"—" }} / {{ e.parite|default:"—" }} / {{ e.enfants_vivants|default:"—" }}
+        </span>
+      </div>
+    </div>
+    <div class="dm-detail-section">
+      <div class="dm-detail-section-title">🩺 Examen clinique</div>
+      <div class="dm-kv-row"><span class="k">DDR</span><span class="v {% if not e.ddr %}em{% endif %}">{% if e.ddr %}{{ e.ddr|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
+      <div class="dm-kv-row"><span class="k">Groupage</span><span class="v {% if not e.groupage %}em{% endif %}">{{ e.groupage|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">TA</span><span class="v {% if not e.ta %}em{% endif %}">{{ e.ta|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">T°</span><span class="v {% if not e.temperature %}em{% endif %}">{{ e.temperature|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">HU</span><span class="v {% if not e.hu %}em{% endif %}">{{ e.hu|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">CU</span><span class="v {% if not e.cu %}em{% endif %}">{{ e.cu|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">État général</span><span class="v {% if not e.etat_general %}em{% endif %}">{{ e.etat_general|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">TV</span><span class="v {% if not e.tv %}em{% endif %}">{{ e.tv|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">SPL</span><span class="v {% if not e.spl %}em{% endif %}">{{ e.spl|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">BCF</span><span class="v {% if not e.bcf %}em{% endif %}">{{ e.bcf|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">ERCF</span><span class="v {% if not e.ercf %}em{% endif %}">{{ e.ercf|default:"—" }}</span></div>
+      <div class="dm-kv-row"><span class="k">ECHO</span><span class="v {% if not e.echo %}em{% endif %}">{{ e.echo|default:"—" }}</span></div>
+    </div>
+  </div>
+  <div class="dm-detail-section">
+    <div class="dm-detail-section-title">📝 Conclusion &amp; CAT</div>
+    {% if e.avis_reanima %}<div class="dm-kv-row"><span class="k">Avis réanimation</span><span class="v">{{ e.avis_reanima }}</span></div>{% endif %}
+    {% if e.conclusion %}
+    <div style="margin-top:10px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:6px">Conclusion</div>
+      <div style="font-size:14px;line-height:1.7;padding:12px;background:color-mix(in srgb,var(--bg) 40%,transparent);border-radius:10px">{{ e.conclusion }}</div>
+    </div>
+    {% endif %}
+    {% if e.cat %}
+    <div style="margin-top:12px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:6px">CAT</div>
+      <div style="font-size:14px;line-height:1.7;padding:12px;background:color-mix(in srgb,var(--dm-teal) 5%,transparent);border:1px solid color-mix(in srgb,var(--dm-teal) 20%,transparent);border-radius:10px">{{ e.cat }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% elif e.type_examen == "PARTOGRAMME" %}
+  <!-- ═══ PARTOGRAMME ════════════════════════════════════════════════════════ -->
+  <div class="dm-detail-section">
+    <div class="dm-detail-section-title">📊 Surveillance du travail</div>
+    <div class="dm-kv-row"><span class="k">Sage-femme / Médecin</span><span class="v {% if not e.sage_femme %}em{% endif %}">{{ e.sage_femme|default:"—" }}</span></div>
+    {% if e.partogramme_notes %}
+    <div style="margin-top:14px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:8px">Données de surveillance</div>
+      <pre style="font-family:'DM Mono',monospace;font-size:12px;line-height:1.8;white-space:pre-wrap;padding:14px;background:color-mix(in srgb,var(--bg) 50%,transparent);border:1px solid var(--line);border-radius:12px;overflow-x:auto">{{ e.partogramme_notes }}</pre>
+    </div>
+    {% endif %}
+    {% if e.prescription %}
+    <div style="margin-top:14px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:6px">Prescription</div>
+      <div style="font-size:14px;line-height:1.7;padding:12px;background:color-mix(in srgb,var(--dm-gold) 6%,transparent);border:1px solid color-mix(in srgb,var(--dm-gold) 20%,transparent);border-radius:10px">{{ e.prescription }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% elif e.type_examen == "NOUVEAU_NE" %}
+  <!-- ═══ NOUVEAU-NÉ ══════════════════════════════════════════════════════ -->
+  <div class="dm-detail-section">
+    <div class="dm-detail-section-title">👶 Examen nouveau-né</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:14px">
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Sexe</div>
+        <div class="dm-kv-val {% if not e.nn_sexe %}empty{% endif %}">{{ e.nn_sexe|default:"Non renseigné" }}</div>
+      </div>
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Poids</div>
+        <div class="dm-kv-val {% if not e.nn_poids %}empty{% endif %}">{% if e.nn_poids %}{{ e.nn_poids }} g{% else %}Non renseigné{% endif %}</div>
+      </div>
+      <div class="dm-kv-block">
+        <div class="dm-kv-label">Score Apgar</div>
+        <div class="dm-kv-val {% if not e.nn_apgar %}empty{% endif %}">{{ e.nn_apgar|default:"Non renseigné" }}</div>
+      </div>
+    </div>
+    {% if e.nn_notes %}
+    <div style="padding:12px;background:color-mix(in srgb,var(--dm-rose) 5%,transparent);border:1px solid color-mix(in srgb,var(--dm-rose) 15%,transparent);border-radius:10px;font-size:14px;line-height:1.7">
+      {{ e.nn_notes }}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if e.notes %}
+  <div class="dm-detail-section">
+    <div class="dm-detail-section-title">📝 Notes complémentaires</div>
+    <p style="font-size:14px;line-height:1.7;margin:0">{{ e.notes }}</p>
+  </div>
+  {% endif %}
+
+  <div style="text-align:right;font-size:11px;color:var(--muted);padding:4px 0">
+    Créé le {{ e.created_at|date:"d/m/Y à H:i" }} — Modifié le {{ e.updated_at|date:"d/m/Y à H:i" }}
+  </div>
+
+</div>
+{% endblock %}

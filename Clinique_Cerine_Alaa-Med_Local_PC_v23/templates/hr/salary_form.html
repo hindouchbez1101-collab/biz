@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{% if edit %}Modifier salaire{% else %}Nouveau salaire{% endif %}{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'salaries_dashboard' %}">← Salaires</a>{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+<div class="cf-wrap">
+  {% if errors.general %}<div class="cf-alert">⚠ {{ errors.general }}</div>{% endif %}
+
+  <div class="cf-card">
+    <div class="cf-section-title">💼 {% if edit %}Corriger le salaire{% else %}Enregistrer un salaire{% endif %}</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid cols-2" style="gap:16px">
+
+        <div class="cf-field span-2">
+          <label class="cf-label">Employé <span class="req">*</span></label>
+          <div class="cf-select-wrap">
+            <select class="cf-select {% if errors.employee_id %}error{% endif %}" name="employee_id">
+              <option value="">— Sélectionner —</option>
+              {% for emp in employees %}
+              <option value="{{ emp.id }}"
+                {% if salary and salary.employee_id == emp.id %}selected
+                {% elif vals.employee_id == emp.id|stringformat:'s' %}selected{% endif %}>
+                {{ emp.full_name }}{% if emp.role %} — {{ emp.role }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if errors.employee_id %}<span class="cf-error-msg">⚠ {{ errors.employee_id }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Mois <span class="req">*</span></label>
+          <input class="cf-input {% if errors.month %}error{% endif %}" type="month" name="month"
+            value="{% if salary %}{{ salary.month|date:'Y-m' }}{% else %}{{ vals.month|default:'' }}{% endif %}">
+          {% if errors.month %}<span class="cf-error-msg">⚠ {{ errors.month }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Montant <span class="req">*</span> <span class="opt">DA</span></label>
+          <input class="cf-input {% if errors.amount %}error{% endif %}" type="number"
+            name="amount" step="0.01" min="0"
+            value="{% if salary %}{{ salary.amount }}{% else %}{{ vals.amount|default:'' }}{% endif %}"
+            placeholder="ex : 45000">
+          {% if errors.amount %}<span class="cf-error-msg">⚠ {{ errors.amount }}</span>{% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Payé le <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="date" name="paid_at"
+            value="{% if salary and salary.paid_at %}{{ salary.paid_at|date:'Y-m-d' }}{% else %}{{ vals.paid_at|default:'' }}{% endif %}">
+          <span class="cf-hint">Laisser vide si non encore versé.</span>
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Note <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="text" name="note"
+            value="{% if salary %}{{ salary.note }}{% else %}{{ vals.note|default:'' }}{% endif %}"
+            placeholder="ex : Prime, avance déduite…">
+        </div>
+
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit">💾 {% if edit %}Corriger{% else %}Enregistrer{% endif %}</button>
+        {% if edit %}
+        <button class="cf-btn-submit" type="submit" name="delete"
+          style="background:color-mix(in srgb,#ef4444 80%,transparent);border-color:#ef4444"
+          onclick="return confirm('Supprimer ce salaire ?')">🗑 Supprimer</button>
+        {% endif %}
+        <a class="btn" href="{% url 'salaries_dashboard' %}">Annuler</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

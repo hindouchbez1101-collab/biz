@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Rapports{% endblock %}
+{% block actions %}
+  <a class="btn red" href="/rapports/pdf/">📄 PDF</a>
+  <a class="btn green" href="/rapports/excel/">📊 Excel</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<!-- Filtre période -->
+<div class="cf-card" style="padding:14px 18px;margin-bottom:4px">
+  <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+    <span class="muted" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px">Période :</span>
+    <input class="input" type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" style="width:160px;border-radius:100px">
+    <span class="muted">→</span>
+    <input class="input" type="date" name="date_to"   value="{{ date_to|date:'Y-m-d' }}"   style="width:160px;border-radius:100px">
+    <button class="btn primary" type="submit">Filtrer</button>
+    <a class="btn" href="/rapports/">Mois en cours</a>
+  </form>
+</div>
+
+<!-- KPIs principaux -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+  <div class="card kpi-accent-green">
+    <div class="card-label">Recettes encaissées</div>
+    <div class="card-kpi" style="font-size:20px;color:var(--accent2)">{{ pay_total }} <span style="font-size:12px;color:var(--muted);font-weight:400">DA</span></div>
+  </div>
+  <div class="card kpi-accent-amber">
+    <div class="card-label">Total charges</div>
+    <div class="card-kpi" style="font-size:20px;color:#f59e0b">{{ charges_total }} <span style="font-size:12px;color:var(--muted);font-weight:400">DA</span></div>
+  </div>
+  <div class="card" style="border-top:3px solid {% if balance >= 0 %}var(--accent2){% else %}#ef4444{% endif %}">
+    <div class="card-label">Bénéfice net</div>
+    <div class="card-kpi" style="font-size:20px;color:{% if balance >= 0 %}var(--accent2){% else %}#ef4444{% endif %}">{{ balance }} <span style="font-size:12px;color:var(--muted);font-weight:400">DA</span></div>
+  </div>
+  <div class="card kpi-accent-blue">
+    <div class="card-label">Nuits d'hospitalisation</div>
+    <div class="card-kpi">{{ nb_nuits_total }}</div>
+  </div>
+</div>
+
+<!-- Sous-totaux charges -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+  <div class="card">
+    <div class="card-label">Dépenses courantes</div>
+    <div style="font-size:18px;font-weight:800;color:#f87171">{{ exp_total }} DA</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Salaires versés</div>
+    <div style="font-size:18px;font-weight:800;color:#f59e0b">{{ sal_total }} DA</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Achats stock</div>
+    <div style="font-size:18px;font-weight:800;color:var(--muted)">{{ pur_total }} DA</div>
+  </div>
+</div>
+
+<!-- Tiers payants -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+  <div class="card">
+    <div class="card-label">Tiers payant Chifa (montant pris en charge)</div>
+    <div style="font-size:18px;font-weight:800;color:#22c55e">{{ pay_chifa }} DA</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Tiers payant Militaire</div>
+    <div style="font-size:18px;font-weight:800;color:#60a5fa">{{ pay_mil }} DA</div>
+  </div>
+</div>
+
+<!-- Encaissements par type + dépenses par catégorie -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+
+  <div class="card">
+    <div class="card-title">💰 Encaissements par type d'acte</div>
+    <table class="table">
+      <thead><tr><th>Type</th><th style="text-align:center">Actes</th><th style="text-align:right">Total</th><th style="text-align:right">%</th></tr></thead>
+      <tbody>
+        {% for r in by_type %}
+        <tr>
+          <td><b>{{ r.service_type }}</b></td>
+          <td style="text-align:center"><span class="badge blue">{{ r.n }}</span></td>
+          <td style="text-align:right"><b>{{ r.total }} DA</b></td>
+          <td style="text-align:right;color:var(--muted)">
+            {% if pay_total > 0 %}{% widthratio r.total pay_total 100 %}%{% else %}—{% endif %}
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="muted" style="text-align:center;padding:18px">Aucune donnée</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📤 Dépenses par catégorie</div>
+    <table class="table">
+      <thead><tr><th>Catégorie</th><th style="text-align:center">Lignes</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>
+        {% for r in exp_by_cat %}
+        <tr>
+          <td><b>{{ r.category }}</b></td>
+          <td style="text-align:center"><span class="badge muted">{{ r.n }}</span></td>
+          <td style="text-align:right"><b style="color:#f87171">{{ r.total }} DA</b></td>
+        </tr>
+        {% empty %}<tr><td colspan="3" class="muted" style="text-align:center;padding:18px">Aucune dépense</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Accouchements détaillés -->
+{% if acc_qs %}
+<div class="card">
+  <div class="card-title">🏥 Accouchements &amp; Césariennes — Détail des séjours</div>
+  <table class="table">
+    <thead>
+      <tr><th>Date</th><th>Patiente</th><th>Type</th><th>Médecin</th><th style="text-align:center">Nuits</th><th style="text-align:right">Salle</th><th style="text-align:right">Séjour</th><th style="text-align:right">Total frais</th></tr>
+    </thead>
+    <tbody>
+      {% for a in acc_qs %}
+      <tr>
+        <td class="muted" style="font-size:12px">{{ a.payment.paid_at|date:"d/m/Y" }}</td>
+        <td><a href="/patients/{{ a.payment.patient_id }}/">{{ a.payment.patient.last_name }} {{ a.payment.patient.first_name }}</a></td>
+        <td>{% if a.type_acte == "CES" %}<span class="badge blue">Césarienne</span>{% else %}<span class="badge green">Naturel</span>{% endif %}</td>
+        <td class="muted" style="font-size:12px">{% if a.payment.doctor %}{{ a.payment.doctor.full_name }}{% else %}—{% endif %}</td>
+        <td style="text-align:center;font-weight:700">{{ a.nb_nuits }}</td>
+        <td style="text-align:right">{{ a.salle }} DA</td>
+        <td style="text-align:right">{{ a.nb_nuits }} × {{ a.tarif_nuit }} DA</td>
+        <td style="text-align:right"><b>{{ a.payment.amount_total }} DA</b></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Derniers encaissements -->
+<div class="card">
+  <div class="card-title">💰 Derniers encaissements (50)</div>
+  <table class="table">
+    <thead><tr><th>Date</th><th>N° Reçu</th><th>Patiente</th><th>Type</th><th>Payeur</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>
+      {% for p in pays_qs %}
+      <tr>
+        <td class="muted" style="font-size:12px">{{ p.paid_at|date:"d/m/Y H:i" }}</td>
+        <td><a href="/encaissements/{{ p.id }}/recu/" style="font-weight:600;font-family:monospace">{{ p.receipt_no }}</a></td>
+        <td>{{ p.patient.last_name }} {{ p.patient.first_name }}</td>
+        <td style="font-size:12px">{{ p.get_service_type_display }}</td>
+        <td>
+          {% if p.payer_type == "CHIFFA" %}<span class="badge green">Chifa</span>
+          {% elif p.payer_type == "MIL" %}<span class="badge blue">Mil.</span>
+          {% else %}<span class="badge muted">Normal</span>{% endif %}
+        </td>
+        <td style="text-align:right"><b>{{ p.amount_total }} DA</b></td>
+      </tr>
+      {% empty %}<tr><td colspan="6" class="muted" style="text-align:center;padding:18px">Aucun encaissement</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Achats stock -->
+{% if purchases_qs %}
+<div class="card">
+  <div class="card-title">📦 Achats stock (20 derniers)</div>
+  <table class="table">
+    <thead><tr><th>Date</th><th>Fournisseur</th><th>Réf.</th><th>Statut</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>
+      {% for p in purchases_qs %}
+      <tr>
+        <td class="muted" style="font-size:12px">{{ p.purchased_at|date:"d/m/Y" }}</td>
+        <td><b>{{ p.supplier.name }}</b></td>
+        <td class="muted" style="font-size:12px">{{ p.invoice_no|default:"—" }}</td>
+        <td><span class="badge {% if p.status == 'APPROVED' or p.status == 'PAID' %}green{% elif p.status == 'CANCELLED' %}red{% else %}amber{% endif %}">{{ p.get_status_display }}</span></td>
+        <td style="text-align:right"><b>{{ p.total_amount }} DA</b></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Salaires -->
+{% if sal_qs %}
+<div class="card">
+  <div class="card-title">💼 Salaires (période)</div>
+  <table class="table">
+    <thead><tr><th>Employé</th><th>Rôle</th><th>Mois</th><th>Payé le</th><th style="text-align:right">Montant</th></tr></thead>
+    <tbody>
+      {% for s in sal_qs %}
+      <tr>
+        <td><b>{{ s.employee.full_name }}</b></td>
+        <td class="muted" style="font-size:12px">{{ s.employee.role|default:"—" }}</td>
+        <td>{{ s.month|date:"m/Y" }}</td>
+        <td>{% if s.paid_at %}<span class="badge green">{{ s.paid_at|date:"d/m/Y" }}</span>{% else %}<span class="badge amber">Non payé</span>{% endif %}</td>
+        <td style="text-align:right"><b style="color:#f87171">−{{ s.amount }} DA</b></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr style="border-top:2px solid var(--line)">
+        <td colspan="4"><b>TOTAL SALAIRES</b></td>
+        <td style="text-align:right"><b style="color:#f87171;font-size:15px">−{{ sal_total }} DA</b></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

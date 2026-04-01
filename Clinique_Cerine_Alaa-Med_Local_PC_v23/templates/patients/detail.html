@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}{{ p.last_name }} {{ p.first_name }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="/patients/">← Liste</a>
+  <a class="btn" href="/rdv/new/">+ RDV</a>
+  <a class="btn" href="/dossiers/patients/{{ p.id }}/new/">+ Dossier</a>
+  <a class="btn" href="/examens/patients/{{ p.id }}/new/">+ Examen</a>
+  <a class="btn primary" href="/encaissements/new/">💰 Encaisser</a>
+{% endblock %}
+{% block content %}
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">👤 Fiche patient</div>
+    <div class="kv"><span>Nom</span><b>{{ p.last_name }}</b></div>
+    <div class="kv"><span>Prénom</span><b>{{ p.first_name }}</b></div>
+    <div class="kv"><span>Téléphone</span><b>{{ p.phone }}</b></div>
+    <div class="kv"><span>Date de naissance</span><b>{% if p.birth_date %}{{ p.birth_date|date:"d/m/Y" }}{% else %}—{% endif %}</b></div>
+    {% if p.notes %}
+    <div class="kv"><span>Notes</span><b>{{ p.notes }}</b></div>
+    {% endif %}
+    <div class="kv"><span>Inscrit le</span><b>{{ p.created_at|date:"d/m/Y" }}</b></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 Derniers rendez-vous</div>
+    <ul class="list">
+      {% for r in p.appointments.all|slice:":8" %}
+      <li>
+        <b>{{ r.start_at|date:"d/m/Y H:i" }}</b> —
+        {{ r.get_service_type_display }} —
+        {% if r.status == "DONE" %}<span class="badge green">Terminé</span>
+        {% elif r.status == "CONFIRMED" %}<span class="badge blue">Confirmé</span>
+        {% elif r.status == "CANCELLED" %}<span class="badge red">Annulé</span>
+        {% else %}<span class="badge muted">En attente</span>{% endif %}
+      </li>
+      {% empty %}<li class="muted">Aucun RDV</li>
+      {% endfor %}
+    </ul>
+    <div style="margin-top:10px"><a class="btn small" href="/rdv/new/">+ Nouveau RDV</a></div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">💰 Derniers paiements</div>
+    <ul class="list">
+      {% for pay in p.payments.all|slice:":8" %}
+      <li>
+        <a href="/encaissements/{{ pay.id }}/recu/">{{ pay.receipt_no }}</a> —
+        {{ pay.get_service_type_display }} —
+        <b>{{ pay.amount_total }} DA</b>
+      </li>
+      {% empty %}<li class="muted">Aucun paiement</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗂️ Dossiers Maternité</div>
+    <ul class="list">
+      {% for d in p.dossiers.all|slice:":8" %}
+      <li>
+        <a href="/dossiers/{{ d.id }}/">{{ d.numero }}</a> —
+        {{ d.get_type_dossier_display }}
+        {% if d.date_entree %} — {{ d.date_entree|date:"d/m/Y" }}{% endif %}
+      </li>
+      {% empty %}<li class="muted">Aucun dossier</li>
+      {% endfor %}
+    </ul>
+    <div style="margin-top:10px"><a class="btn small" href="/dossiers/patients/{{ p.id }}/new/">+ Nouveau dossier</a></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">🔬 Examens Maternité</div>
+  <ul class="list">
+    {% for e in p.examens.all|slice:":10" %}
+    <li>
+      <a href="/examens/{{ e.id }}/">{{ e.numero_manuel }}</a> —
+      {{ e.get_type_examen_display }} —
+      {{ e.date_examen|date:"d/m/Y" }}
+    </li>
+    {% empty %}<li class="muted">Aucun examen</li>
+    {% endfor %}
+  </ul>
+  <div style="margin-top:10px"><a class="btn small" href="/examens/patients/{{ p.id }}/new/">+ Nouvel examen</a></div>
+</div>
+
+{% endblock %}

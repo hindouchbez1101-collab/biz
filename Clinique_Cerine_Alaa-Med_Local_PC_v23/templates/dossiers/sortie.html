@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Sortie — {{ d.numero }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="/dossiers/{{ d.id }}/">← Dossier</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<!-- En-tête patient -->
+<div class="cf-card" style="margin-bottom:16px;border-left:4px solid var(--accent2)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px">Enregistrement de la sortie</div>
+      <div style="font-family:var(--font-serif);font-style:italic;font-size:22px">{{ d.nom }} {{ d.prenom }}</div>
+      <div class="muted" style="font-size:13px;margin-top:2px">
+        Dossier N° <b style="color:var(--text)">{{ d.numero }}</b>
+        · {% if d.type_dossier == "CHIFA" %}<span style="color:#22c55e">Chifa ACC</span>
+          {% elif d.type_dossier == "MILITAIRE" %}<span style="color:#60a5fa">Militaire</span>
+          {% else %}<span>Général</span>{% endif %}
+        {% if d.date_entree %}· Entrée le {{ d.date_entree|date:"d/m/Y" }}{% endif %}
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="muted" style="font-size:11px">Médecin</div>
+      <div style="font-weight:700">{{ d.medecin|default:"—" }}</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+
+  <!-- Formulaire sortie -->
+  <div class="cf-card">
+    <div class="cf-section-title">🏁 Informations de sortie</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="cf-grid" style="gap:16px">
+
+        <div class="cf-field span-full">
+          <label class="cf-label">Diagnostic final</label>
+          <input class="cf-input" type="text" name="diagnostic"
+            value="{{ d.diagnostic|default:'' }}"
+            placeholder="ex : Accouchement naturel eutocique, Césarienne programmée…">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Date d'intervention <span class="opt">(si acte chirurgical)</span></label>
+          <input class="cf-input" type="date" name="date_intervention"
+            value="{{ d.date_intervention|date:'Y-m-d'|default:'' }}">
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Date de sortie <span class="req">*</span></label>
+          <input class="cf-input {% if errors.date_sortie %}error{% endif %}"
+            type="date" name="date_sortie"
+            value="{{ d.date_sortie|date:'Y-m-d'|default:'' }}">
+          {% if errors.date_sortie %}
+          <span class="cf-error-msg">⚠ {{ errors.date_sortie }}</span>
+          {% endif %}
+        </div>
+
+        <div class="cf-field">
+          <label class="cf-label">Date de dépôt du dossier <span class="opt">(optionnel)</span></label>
+          <input class="cf-input" type="date" name="date_depot"
+            value="{{ d.date_depot|date:'Y-m-d'|default:'' }}">
+        </div>
+
+        <div class="cf-field span-full">
+          <label class="cf-label">Notes complémentaires <span class="opt">(optionnel)</span></label>
+          <textarea class="cf-textarea" name="notes" rows="3"
+            placeholder="Observations, complications éventuelles…">{{ d.notes|default:'' }}</textarea>
+        </div>
+
+      </div>
+      <div class="cf-actions">
+        <button class="cf-btn-submit" type="submit">
+          🏁 Enregistrer la sortie &amp; Aller à la caisse →
+        </button>
+        <a class="btn" href="/dossiers/{{ d.id }}/">Annuler</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Récapitulatif dossier -->
+  <div class="cf-card">
+    <div class="cf-section-title">📋 Récapitulatif du séjour</div>
+    <div class="kv"><span>Patient</span><b>{{ d.nom }} {{ d.prenom }}</b></div>
+    <div class="kv"><span>Époux</span><b>{{ d.epoux|default:"—" }}</b></div>
+    <div class="kv"><span>Médecin</span><b>{{ d.medecin|default:"—" }}</b></div>
+    <div class="kv"><span>Service</span><b>{{ d.service|default:"—" }}</b></div>
+    <div class="kv"><span>Date d'entrée</span><b>{% if d.date_entree %}{{ d.date_entree|date:"d/m/Y" }}{% else %}—{% endif %}</b></div>
+    {% if d.num_ass %}
+    <div class="kv"><span>N° Assurance</span><b>{{ d.num_ass }}</b></div>
+    {% endif %}
+
+    {% if d.date_entree %}
+    <div style="margin-top:14px;padding:12px 16px;border-radius:14px;background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px">Durée du séjour (estimée)</div>
+      <div style="font-size:20px;font-weight:800" id="dureeSejourDisplay">— nuit(s)</div>
+      <div class="muted" style="font-size:12px" id="dureeSejourDetail">Entrez la date de sortie →</div>
+    </div>
+    {% endif %}
+
+    <!-- Examens liés -->
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--line)">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">🔬 Examens associés</div>
+      {% for e in d.patient.examens.all|slice:":6" %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid color-mix(in srgb,var(--line) 50%,transparent);font-size:13px">
+        <span>
+          {% if e.type_examen == "ANAMNESE" %}📋
+          {% elif e.type_examen == "PARTOGRAMME" %}📊
+          {% else %}👶{% endif %}
+          {{ e.get_type_examen_display }} — <span class="muted">N° {{ e.numero_manuel }}</span>
+        </span>
+        <a class="btn small" href="/examens/{{ e.id }}/completer/">Compléter</a>
+      </div>
+      {% empty %}
+      <div class="muted" style="font-size:12px">Aucun examen lié.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Calculer durée séjour en temps réel
+const entreeStr = "{{ d.date_entree|date:'Y-m-d'|default:'' }}";
+const sortieInput = document.querySelector('input[name="date_sortie"]');
+const display = document.getElementById('dureeSejourDisplay');
+const detail = document.getElementById('dureeSejourDetail');
+
+function updateDuree() {
+  if (!entreeStr || !sortieInput || !display) return;
+  const entree = new Date(entreeStr);
+  const sortie = new Date(sortieInput.value);
+  if (isNaN(entree) || isNaN(sortie) || sortie < entree) {
+    display.textContent = '— nuit(s)';
+    if (detail) detail.textContent = 'Date de sortie invalide';
+    return;
+  }
+  const nuits = Math.max(0, Math.round((sortie - entree) / 86400000));
+  display.textContent = nuits + ' nuit' + (nuits > 1 ? 's' : '');
+  if (detail) detail.textContent = entreeStr.split('-').reverse().join('/') + ' → ' + sortieInput.value.split('-').reverse().join('/');
+}
+
+if (sortieInput) {
+  sortieInput.addEventListener('input', updateDuree);
+  updateDuree();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <title>Reçu {{ pay.receipt_no }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A5; margin: 8mm 10mm; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'DM Sans', Arial, sans-serif; color: #0a1220; background: #fff; font-size: 12px; line-height: 1.5; margin: 0; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:10px; border-bottom:2px solid #0a1220; margin-bottom:12px; }
+    .clinic-name { font-family:'Instrument Serif',serif; font-style:italic; font-size:17px; line-height:1.2; }
+    .clinic-sub { font-size:10px; color:#5a6e90; margin-top:3px; }
+    .receipt-meta { text-align:right; }
+    .receipt-no { font-size:14px; font-weight:800; font-family:monospace; }
+    .receipt-date { font-size:11px; color:#5a6e90; }
+    .barcode img { height:36px; margin-top:4px; }
+    .body-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+    .info-block { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8faff; }
+    .info-title { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#5a6e90; font-weight:700; margin-bottom:5px; }
+    .info-name { font-weight:700; font-size:12px; margin-bottom:2px; }
+    .info-detail { font-size:11px; color:#5a6e90; }
+
+    /* Détail standard */
+    .service-block { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:8px; }
+    .service-header { background:#0a1220; color:#fff; padding:7px 10px; font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:700; }
+    .service-body { padding:8px 10px; }
+    .service-name { font-size:14px; font-weight:800; margin-bottom:4px; }
+    .service-detail { font-size:11px; color:#5a6e90; line-height:1.7; }
+
+    /* Détail accouchement */
+    .acc-block { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:8px; }
+    .acc-header { background:#0a1220; color:#fff; padding:7px 10px; font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+    .acc-table { width:100%; border-collapse:collapse; }
+    .acc-table tr { border-bottom:1px solid #f0f4ff; }
+    .acc-table tr:last-child { border-bottom:none; }
+    .acc-table td { padding:5px 10px; font-size:11px; }
+    .acc-table td:last-child { text-align:right; font-weight:700; white-space:nowrap; }
+    .acc-table tr.sub td { color:#5a6e90; font-size:10px; padding:3px 10px; }
+    .acc-table tr.total-row td { font-weight:800; font-size:12px; background:#f8faff; border-top:1.5px solid #0a1220; }
+
+    /* Montants */
+    .amounts-block { border:1.5px solid #0a1220; border-radius:8px; overflow:hidden; margin-bottom:8px; }
+    .amounts-row { display:flex; justify-content:space-between; align-items:center; padding:7px 10px; border-bottom:1px solid #e2e8f0; }
+    .amounts-row:last-child { border-bottom:none; }
+    .amounts-row.total { background:#0a1220; color:#fff; }
+    .amounts-label { font-size:11px; color:#5a6e90; }
+    .amounts-row.total .amounts-label { color:rgba(255,255,255,.65); }
+    .amounts-val { font-weight:700; font-size:12px; }
+    .amounts-row.total .amounts-val { font-size:15px; }
+
+    /* Lettres */
+    .lettres-block { padding:7px 10px; border:1px solid #e2e8f0; border-radius:8px; font-style:italic; font-size:11px; margin-bottom:10px; background:#f8faff; }
+    .lettres-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#5a6e90; font-style:normal; font-weight:700; margin-bottom:3px; }
+
+    /* Footer */
+    .footer { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:8px; border-top:1px solid #e2e8f0; }
+    .footer-label { font-size:9px; text-transform:uppercase; letter-spacing:.8px; color:#5a6e90; font-weight:700; margin-bottom:3px; }
+    .footer-val { font-weight:700; font-size:11px; }
+    .stamp { display:inline-block; border:2px solid #1d6fee; color:#1d6fee; font-weight:900; font-size:12px; letter-spacing:2px; padding:3px 8px; border-radius:4px; transform:rotate(-8deg); }
+
+    .print-actions { position:fixed; bottom:14px; right:14px; display:flex; gap:8px; z-index:999; }
+    .print-btn { padding:9px 16px; border-radius:100px; border:1.5px solid #0a1220; background:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; }
+    .print-btn.primary { background:#0a1220; color:#fff; }
+    @media print { .print-actions { display:none; } }
+  </style>
+</head>
+<body>
+
+<div class="print-actions">
+  <button class="print-btn" onclick="window.print()">🖨️ Imprimer</button>
+  <a href="/" class="print-btn primary" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">✔ Terminer</a>
+</div>
+
+<!-- En-tête -->
+<div class="header">
+  <div>
+    <div class="clinic-name">Clinique Cerine Alaa-Med</div>
+    <div class="clinic-sub">Établissement Hospitalier Privé · Chorfa (Bradaï) Chlef</div>
+  </div>
+  <div class="receipt-meta">
+    <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5a6e90;margin-bottom:2px">Reçu N°</div>
+    <div class="receipt-no">{{ pay.receipt_no }}</div>
+    <div class="receipt-date">{{ pay.paid_at|date:"d/m/Y à H:i" }}</div>
+    {% if barcode_url %}<div class="barcode"><img src="{{ barcode_url }}" alt="barcode"></div>{% endif %}
+  </div>
+</div>
+
+<!-- Patient + Clinique -->
+<div class="body-grid">
+  <div class="info-block">
+    <div class="info-title">Payé par</div>
+    <div class="info-name">{{ pay.patient.last_name }} {{ pay.patient.first_name }}</div>
+    <div class="info-detail">📞 {{ pay.patient.phone }}<br>Payeur : <b>{{ pay.get_payer_type_display }}</b></div>
+  </div>
+  <div class="info-block">
+    <div class="info-title">Payé à</div>
+    <div class="info-name">Clinique Cerine Alaa-Med</div>
+    <div class="info-detail">Mode : <b>Cash</b><br>Caissier : <b>{{ pay.created_by.username }}</b></div>
+  </div>
+</div>
+
+{% if acc_detail %}
+<!-- ══ DÉTAIL FRAIS ACCOUCHEMENT ══ -->
+<div class="acc-block">
+  <div class="acc-header">
+    <span>
+      {% if acc_detail.type_acte == "CES" %}⚕️ Césarienne{% else %}🌿 Accouchement naturel{% endif %}
+      — Détail des frais
+    </span>
+    {% if pay.doctor %}<span style="font-size:10px;opacity:.8">Dr. {{ pay.doctor.full_name }}</span>{% endif %}
+  </div>
+  <table class="acc-table">
+    {% if acc_detail.salle %}
+    <tr><td>Salle d'accouchement / Bloc opératoire</td><td>{{ acc_detail.salle }} DA</td></tr>
+    {% endif %}
+    {% if acc_detail.nb_nuits %}
+    <tr><td>Séjour — {{ acc_detail.nb_nuits }} nuit{{ acc_detail.nb_nuits|pluralize }}</td>
+        <td>{% widthratio acc_detail.nb_nuits 1 acc_detail.tarif_nuit %} DA</td></tr>
+    <tr class="sub"><td colspan="2">{{ acc_detail.nb_nuits }} nuit{{ acc_detail.nb_nuits|pluralize }} × {{ acc_detail.tarif_nuit }} DA / nuit</td></tr>
+    {% endif %}
+    {% if acc_detail.anesthesie %}
+    <tr><td>Frais d'anesthésie</td><td>{{ acc_detail.anesthesie }} DA</td></tr>
+    {% endif %}
+    {% if acc_detail.sage_femme %}
+    <tr><td>Honoraires sage-femme</td><td>{{ acc_detail.sage_femme }} DA</td></tr>
+    {% endif %}
+    {% if acc_detail.medicaments %}
+    <tr><td>Médicaments &amp; consommables</td><td>{{ acc_detail.medicaments }} DA</td></tr>
+    {% endif %}
+    {% if acc_detail.frais_admin %}
+    <tr><td>Frais administratifs (dossier)</td><td>{{ acc_detail.frais_admin }} DA</td></tr>
+    {% endif %}
+    {% if acc_detail.certificat_naissance %}
+    <tr><td>Certificat de naissance</td><td>{{ acc_detail.certificat_naissance }} DA</td></tr>
+    {% endif %}
+    {% if acc_detail.frais_chifa %}
+    <tr><td>Frais dossier Chifa / Militaire</td><td>{{ acc_detail.frais_chifa }} DA</td></tr>
+    {% endif %}
+    <tr class="total-row">
+      <td>TOTAL FRAIS</td>
+      <td>{{ pay.amount_total }} DA</td>
+    </tr>
+  </table>
+  {% if acc_detail.notes %}
+  <div style="padding:6px 10px;font-size:11px;color:#5a6e90;border-top:1px solid #e2e8f0;font-style:italic">
+    {{ acc_detail.notes }}
+  </div>
+  {% endif %}
+</div>
+
+{% else %}
+<!-- ══ SERVICE STANDARD ══ -->
+<div class="service-block">
+  <div class="service-header">Détail de la prestation</div>
+  <div class="service-body">
+    <div class="service-name">{{ pay.get_service_type_display }}</div>
+    <div class="service-detail">
+      {% if pay.doctor %}Médecin : <b>{{ pay.doctor.full_name }}</b><br>{% endif %}
+      {% if pay.third_party_note %}Tiers payant : <b>{{ pay.third_party_note }}</b>{% endif %}
+    </div>
+    {% if items %}
+    <ul style="margin:6px 0 0;padding-left:14px">
+      {% for it in items %}
+      <li style="font-size:11px">{{ it.lab_test.name|default:it.label }} — <b>{{ it.amount }} DA</b></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Montants -->
+<div class="amounts-block">
+  <div class="amounts-row">
+    <span class="amounts-label">Part patient</span>
+    <span class="amounts-val">{{ pay.amount_patient }} DA</span>
+  </div>
+  <div class="amounts-row">
+    <span class="amounts-label">Part tiers payant</span>
+    <span class="amounts-val">{{ pay.amount_third_party }} DA</span>
+  </div>
+  <div class="amounts-row total">
+    <span class="amounts-label">TOTAL</span>
+    <span class="amounts-val">{{ pay.amount_total }} DA</span>
+  </div>
+</div>
+
+<!-- Montant en lettres -->
+<div class="lettres-block">
+  <div class="lettres-label">Montant en toutes lettres</div>
+  {{ montant_lettres }}
+</div>
+
+<!-- Pied de page -->
+<div class="footer">
+  <div>
+    <div class="footer-label">Lieu et date</div>
+    <div class="footer-val">Chlef, le {{ pay.paid_at|date:"d/m/Y" }}</div>
+  </div>
+  <div style="text-align:right">
+    <div class="footer-label">Signature &amp; cachet</div>
+    <div class="stamp">VALIDÉ</div>
+  </div>
+</div>
+
+</body>
+</html>
