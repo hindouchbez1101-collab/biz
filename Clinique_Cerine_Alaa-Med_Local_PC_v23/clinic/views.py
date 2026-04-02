@@ -1560,10 +1560,11 @@ def caisse_view(request):
             fadmin     = _f("acc_frais_admin")
             cert       = _f("acc_certificat")
             fchifa     = _f("acc_frais_chifa")
+            hon_med    = _f("acc_honoraires_medecin")
             acc_notes  = request.POST.get("acc_notes", "").strip()
 
             sejour = nb_nuits * tarif_nuit
-            total_frais = salle + sejour + anest + sf + meds + fadmin + cert + fchifa
+            total_frais = salle + sejour + anest + sf + meds + fadmin + cert + fchifa + hon_med
 
             tiers = float(tiers_montant) if tiers_montant else 0
             total_patient = max(0, total_frais - tiers)
@@ -1590,7 +1591,7 @@ def caisse_view(request):
                     salle=salle, nb_nuits=nb_nuits, tarif_nuit=tarif_nuit,
                     anesthesie=anest, sage_femme=sf, medicaments=meds,
                     frais_admin=fadmin, certificat_naissance=cert,
-                    frais_chifa=fchifa, notes=acc_notes,
+                    frais_chifa=fchifa, honoraires_medecin=hon_med, notes=acc_notes,
                 )
 
             AuditLog.objects.create(
