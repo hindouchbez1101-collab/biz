@@ -216,6 +216,15 @@
             placeholder="0" oninput="recalcAcc()">
         </div>
 
+        <!-- Honoraires médecin vacataire -->
+        <div class="cf-field span-2">
+          <label class="cf-label">Honoraires médecin vacataire <span class="opt">DA — optionnel</span></label>
+          <input class="cf-input acc-field" type="number" name="acc_honoraires_medecin"
+            step="0.01" min="0" value="0"
+            placeholder="0" oninput="recalcAcc()">
+          <div class="cf-hint" style="margin-top:4px">Médecin extérieur appelé pour l'intervention (accouchement, césarienne…)</div>
+        </div>
+
         <!-- Notes -->
         <div class="cf-field span-2">
           <label class="cf-label">Notes complémentaires <span class="opt">(optionnel)</span></label>
@@ -380,7 +389,8 @@ function recalcAcc() {
   const admin    = gn('acc_frais_admin');
   const cert     = gn('acc_certificat');
   const chifa    = gn('acc_frais_chifa');
-  const total    = salle + sejour + anest + sf + meds + admin + cert + chifa;
+  const honMed   = gn('acc_honoraires_medecin');
+  const total    = salle + sejour + anest + sf + meds + admin + cert + chifa + honMed;
 
   document.getElementById('accSejourTotal').textContent =
     sejour.toLocaleString('fr-DZ') + ' DA (' + nuits + ' nuit' + (nuits > 1 ? 's' : '') + ' × ' + tNuit.toLocaleString('fr-DZ') + ' DA)';
@@ -397,7 +407,8 @@ function recalcAcc() {
   if (meds)   lines.push('Médicaments ' + meds.toLocaleString('fr-DZ'));
   if (admin)  lines.push('Frais admin. ' + admin.toLocaleString('fr-DZ'));
   if (cert)   lines.push('Certificat ' + cert.toLocaleString('fr-DZ'));
-  if (chifa)  lines.push('Dossier Chifa/Mil. ' + chifa.toLocaleString('fr-DZ'));
+  if (chifa)   lines.push('Dossier Chifa/Mil. ' + chifa.toLocaleString('fr-DZ'));
+  if (honMed)  lines.push('Honoraires médecin ' + honMed.toLocaleString('fr-DZ'));
   document.getElementById('accBreakdown').textContent = lines.join(' · ') + ' DA';
 
   // Sync total payment
