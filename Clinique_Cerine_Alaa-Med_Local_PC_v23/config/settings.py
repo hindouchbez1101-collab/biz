@@ -1,14 +1,28 @@
 from pathlib import Path
 import os
+import dj_database_url  # تأكد من إضافة dj-database-url لملف requirements.txt
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret-key-change-me")
-DEBUG = False
+# --- الأمان وإعدادات البيئة ---
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-key-for-dev")
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = ['*']
+# إضافة رابط Railway الخاص بك هنا
+ALLOWED_HOSTS = [
+    "biz-production-22f5.up.railway.app", 
+    "localhost", 
+    "127.0.0.1",
+    ".railway.app"
+]
+
+# حل مشكلة 403 CSRF في الروابط الآمنة
+CSRF_TRUSTED_ORIGINS = [
+    "https://biz-production-22f5.up.railway.app",
+    "https://*.railway.app"
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -18,10 +32,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "clinic",
+    "whitenoise.runserver_nostatic", # لإدارة الملفات الثابتة في الإنتاج
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware", # إضافة WhiteNoise
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -51,26 +67,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-DB_ENGINE = os.getenv("DB_ENGINE", "sqlite").lower()
-
-if DB_ENGINE == "postgres":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("DB_NAME", "clinique"),
-            "USER": os.getenv("DB_USER", "postgres"),
-            "PASSWORD": os.getenv("DB_PASSWORD", "postgres"),
-            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-            "PORT": os.getenv("DB_PORT", "5432"),
-        }
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+# --- إعداد قاعدة البيانات ---
+# سيستخدم Railway رابط DATABASE_URL تلقائياً إذا قمت بإضافة قاعدة بيانات للمشروع
+DATABASES = {
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600
+    )
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -79,14 +83,28 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+# --- الإعدادات الإقليمية (الجزائر) ---
 LANGUAGE_CODE = "fr-fr"
 TIME_ZONE = "Africa/Algiers"
 USE_I18N = True
 USE_TZ = True
 
+# --- الملفات الثابتة (Static Files) ---
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# إعدادات WhiteNoise لضغط الملفات الثابتة
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- إعدادات الحماية الإضافية لـ HTTPS ---
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
