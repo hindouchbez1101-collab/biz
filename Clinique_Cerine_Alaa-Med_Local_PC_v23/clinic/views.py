@@ -346,6 +346,7 @@ def payment_new(request):
                     payment=pay,
                     type_acte=pay.service_type,
                     salle=_d("acc_salle"),
+                    honoraires_medecin=_d("acc_honoraires_medecin"),
                     nb_nuits=nb_nuits,
                     tarif_nuit=tarif_nuit,
                     anesthesie=_d("acc_anesthesie"),

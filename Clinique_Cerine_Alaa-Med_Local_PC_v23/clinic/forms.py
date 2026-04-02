@@ -48,6 +48,16 @@ class ExpenseForm(forms.ModelForm):
         }
 
 class PaymentForm(forms.ModelForm):
+    amount_patient = forms.DecimalField(
+        required=False, min_value=0, decimal_places=2, max_digits=12,
+        widget=forms.NumberInput(attrs={"class": "input", "step": "0.01"}))
+    amount_third_party = forms.DecimalField(
+        required=False, min_value=0, decimal_places=2, max_digits=12,
+        widget=forms.NumberInput(attrs={"class": "input", "step": "0.01"}))
+    amount_total = forms.DecimalField(
+        required=False, min_value=0, decimal_places=2, max_digits=12,
+        widget=forms.NumberInput(attrs={"class": "input", "step": "0.01"}))
+
     class Meta:
         model = Payment
         fields = ["patient", "appointment", "service_type", "payer_type", "doctor", "amount_patient", "amount_third_party", "amount_total", "third_party_note", "note"]
@@ -57,22 +67,21 @@ class PaymentForm(forms.ModelForm):
             "service_type": forms.Select(attrs={"class":"input"}),
             "payer_type": forms.Select(attrs={"class":"input"}),
             "doctor": forms.Select(attrs={"class":"input"}),
-            "amount_patient": forms.NumberInput(attrs={"class":"input", "step":"0.01"}),
-            "amount_third_party": forms.NumberInput(attrs={"class":"input", "step":"0.01"}),
-            "amount_total": forms.NumberInput(attrs={"class":"input", "step":"0.01"}),
-            "doctor": forms.Select(attrs={"class":"input"}),
             "third_party_note": forms.TextInput(attrs={"class":"input"}),
             "note": forms.TextInput(attrs={"class":"input"}),
         }
 
 class PaymentItemForm(forms.ModelForm):
+    amount = forms.DecimalField(
+        required=False, min_value=0, decimal_places=2, max_digits=12,
+        widget=forms.NumberInput(attrs={"class": "input", "step": "0.01"}))
+
     class Meta:
         model = PaymentItem
         fields = ["lab_test", "label", "amount"]
         widgets = {
             "lab_test": forms.Select(attrs={"class":"input"}),
             "label": forms.TextInput(attrs={"class":"input", "placeholder":"Si pas dans la liste"}),
-            "amount": forms.NumberInput(attrs={"class":"input", "step":"0.01"}),
         }
 
 class LabPackApplyForm(forms.Form):

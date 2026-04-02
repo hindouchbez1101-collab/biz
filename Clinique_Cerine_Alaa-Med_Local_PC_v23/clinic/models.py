@@ -403,6 +403,9 @@ class AccouchementDetail(models.Model):
     certificat_naissance= models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Certificat de naissance")
     frais_chifa         = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Frais dossier Chifa/Militaire")
 
+    # Honoraires médecin vacataire (ex: médecin extérieur appelé pour l'accouchement)
+    honoraires_medecin  = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Honoraires médecin vacataire (DA)")
+
     # Notes libres
     notes               = models.TextField(blank=True, default='', verbose_name="Notes complémentaires")
 
@@ -423,7 +426,8 @@ class AccouchementDetail(models.Model):
             float(self.medicaments or 0) +
             float(self.frais_admin or 0) +
             float(self.certificat_naissance or 0) +
-            float(self.frais_chifa or 0)
+            float(self.frais_chifa or 0) +
+            float(self.honoraires_medecin or 0)
         )
 
     def __str__(self):
