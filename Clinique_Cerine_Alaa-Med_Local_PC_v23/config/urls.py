@@ -76,4 +76,12 @@ urlpatterns = [
     # Caisse intelligente — génération automatique depuis dossier
     path("encaissements/caisse/",                       v.caisse_view,    name="caisse_view"),
     path("encaissements/api/patient-dossier/",          v.api_patient_dossier, name="api_patient_dossier"),
+
+    # Médecins ambulatoires
+    path("medecins-ambulants/",                         v.medecin_ambulant_list,   name="medecin_ambulant_list"),
+    path("medecins-ambulants/new/",                     v.medecin_ambulant_new,    name="medecin_ambulant_new"),
+    path("medecins-ambulants/<int:pk>/",                v.medecin_ambulant_detail, name="medecin_ambulant_detail"),
+    path("medecins-ambulants/<int:pk>/edit/",           v.medecin_ambulant_edit,   name="medecin_ambulant_edit"),
+    path("medecins-ambulants/honoraires/<int:acc_pk>/payer/",   v.honoraires_mark_paid,   name="honoraires_mark_paid"),
+    path("medecins-ambulants/honoraires/<int:acc_pk>/annuler/", v.honoraires_mark_unpaid, name="honoraires_mark_unpaid"),
 ]

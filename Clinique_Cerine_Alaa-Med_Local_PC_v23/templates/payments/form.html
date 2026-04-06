@@ -225,6 +225,21 @@
           <div class="cf-hint" style="margin-top:4px">Médecin extérieur appelé pour l'intervention (accouchement, césarienne…)</div>
         </div>
 
+        <!-- Médecin ambulatoire -->
+        <div class="cf-field span-2">
+          <label class="cf-label">Médecin ambulatoire <span class="opt">(optionnel — identifie le praticien)</span></label>
+          <select class="cf-input acc-field" name="acc_medecin_ambulant">
+            <option value="">— Aucun / Non précisé —</option>
+            {% for med in medecins_ambulants %}
+            <option value="{{ med.pk }}">{{ med.full_name }}{% if med.specialite %} — {{ med.specialite }}{% endif %}</option>
+            {% endfor %}
+          </select>
+          <div class="cf-hint" style="margin-top:4px">
+            Sélectionner le médecin pour suivi de ses honoraires.
+            <a href="{% url 'medecin_ambulant_new' %}" target="_blank" style="margin-left:6px">+ Ajouter un médecin</a>
+          </div>
+        </div>
+
         <!-- Notes -->
         <div class="cf-field span-2">
           <label class="cf-label">Notes complémentaires <span class="opt">(optionnel)</span></label>

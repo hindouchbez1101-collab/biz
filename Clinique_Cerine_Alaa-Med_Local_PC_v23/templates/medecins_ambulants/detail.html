@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ medecin.full_name }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="{% url 'medecin_ambulant_list' %}">← Liste médecins</a>
+  <a class="btn" href="{% url 'medecin_ambulant_edit' medecin.pk %}">✏️ Modifier</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<div class="card" style="margin-bottom:20px">
+  <div style="font-size:1.2rem;font-weight:700;margin-bottom:6px">
+    👨‍⚕️ {{ medecin.full_name }}
+    {% if not medecin.is_active %}<span class="badge red" style="margin-left:8px">Inactif</span>{% endif %}
+  </div>
+  {% if medecin.specialite %}<div class="muted">Spécialité : {{ medecin.specialite }}</div>{% endif %}
+  {% if medecin.phone %}<div class="muted">Téléphone : {{ medecin.phone }}</div>{% endif %}
+</div>
+
+<div class="grid-3" style="margin-bottom:24px">
+  <div class="card kpi-accent-blue" style="padding:14px 18px">
+    <div class="card-label">Total honoraires</div>
+    <div class="card-kpi">{{ total|floatformat:2 }} DA</div>
+  </div>
+  <div class="card kpi-accent-green" style="padding:14px 18px">
+    <div class="card-label">Payés</div>
+    <div class="card-kpi">{{ payes|floatformat:2 }} DA</div>
+  </div>
+  <div class="card kpi-accent-amber" style="padding:14px 18px">
+    <div class="card-label">Restant dû</div>
+    <div class="card-kpi">{{ dus|floatformat:2 }} DA</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="cf-section-title" style="margin-bottom:16px">Accouchements réalisés</div>
+  {% if accouchements %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Patiente</th>
+        <th>Type acte</th>
+        <th style="text-align:right">Honoraires (DA)</th>
+        <th style="text-align:center">Statut paiement</th>
+        <th style="text-align:center">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for acc in accouchements %}
+      <tr>
+        <td>{{ acc.payment.paid_at|date:"d/m/Y" }}</td>
+        <td>
+          <a href="{% url 'patient_detail' acc.payment.patient.pk %}">{{ acc.payment.patient }}</a>
+          <br><span class="muted" style="font-size:.82rem">Reçu {{ acc.payment.receipt_no }}</span>
+        </td>
+        <td>{{ acc.get_type_acte_display }}</td>
+        <td style="text-align:right;font-weight:700;font-size:1.05rem">
+          {{ acc.honoraires_medecin|floatformat:2 }}
+        </td>
+        <td style="text-align:center">
+          {% if acc.honoraires_payes %}
+            <span class="badge green">✓ Payé</span>
+            {% if acc.honoraires_payes_le %}
+              <div class="muted" style="font-size:.8rem">{{ acc.honoraires_payes_le|date:"d/m/Y" }}</div>
+            {% endif %}
+          {% else %}
+            <span class="badge red">Non payé</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center">
+          {% if not acc.honoraires_payes %}
+          <form method="post" action="{% url 'honoraires_mark_paid' acc.pk %}" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="honoraires_payes_le" value="{% now 'Y-m-d' %}">
+            <button class="btn small primary" type="submit"
+              onclick="return confirm('Marquer les honoraires comme payés ?')">
+              ✓ Marquer payé
+            </button>
+          </form>
+          {% else %}
+          <form method="post" action="{% url 'honoraires_mark_unpaid' acc.pk %}" style="display:inline">
+            {% csrf_token %}
+            <button class="btn small" type="submit"
+              onclick="return confirm('Annuler ce paiement ?')"
+              style="color:#ef4444;border-color:#ef4444">
+              ✕ Annuler
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted" style="text-align:center;padding:32px">
+    Aucun accouchement enregistré pour ce médecin.
+  </p>
+  {% endif %}
+</div>
+
+{% endblock %}

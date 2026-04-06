@@ -184,6 +184,20 @@
         </div>
 
         <div class="cf-field span-2">
+          <label class="cf-label">Médecin ambulatoire <span class="opt">(optionnel — identifie le praticien)</span></label>
+          <select class="cf-input" name="acc_medecin_ambulant" id="fMedecinAmbulant">
+            <option value="">— Aucun / Non précisé —</option>
+            {% for med in medecins_ambulants %}
+            <option value="{{ med.pk }}">{{ med.full_name }}{% if med.specialite %} — {{ med.specialite }}{% endif %}</option>
+            {% endfor %}
+          </select>
+          <div class="cf-hint" style="margin-top:4px">
+            Sélectionner le médecin pour suivi de ses honoraires.
+            <a href="{% url 'medecin_ambulant_new' %}" target="_blank" style="margin-left:6px">+ Ajouter un médecin</a>
+          </div>
+        </div>
+
+        <div class="cf-field span-2">
           <label class="cf-label">🧴 Médicaments &amp; consommables utilisés</label>
           <div id="medsRows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
           <div style="display:flex;gap:8px;align-items:center">
