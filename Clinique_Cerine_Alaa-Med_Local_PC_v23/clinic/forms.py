@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AppointmentStatus, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus
+from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AppointmentStatus, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, MedecinAmbulant
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={"class":"input", "placeholder":"Utilisateur"}))
@@ -57,6 +57,18 @@ class PaymentForm(forms.ModelForm):
     amount_total = forms.DecimalField(
         required=False, min_value=0, decimal_places=2, max_digits=12,
         widget=forms.NumberInput(attrs={"class": "input", "step": "0.01"}))
+
+    def clean_amount_patient(self):
+        from decimal import Decimal
+        return self.cleaned_data.get('amount_patient') or Decimal('0')
+
+    def clean_amount_third_party(self):
+        from decimal import Decimal
+        return self.cleaned_data.get('amount_third_party') or Decimal('0')
+
+    def clean_amount_total(self):
+        from decimal import Decimal
+        return self.cleaned_data.get('amount_total') or Decimal('0')
 
     class Meta:
         model = Payment
@@ -140,6 +152,25 @@ class SalaryForm(forms.ModelForm):
             "paid_at": forms.DateInput(attrs={"class":"input", "type":"date"}),
             "note": forms.TextInput(attrs={"class":"input"}),
         }
+
+
+class MedecinAmbulantForm(forms.ModelForm):
+    class Meta:
+        model = MedecinAmbulant
+        fields = ["full_name", "phone", "specialite", "is_active"]
+        widgets = {
+            "full_name":  forms.TextInput(attrs={"class": "input"}),
+            "phone":      forms.TextInput(attrs={"class": "input"}),
+            "specialite": forms.TextInput(attrs={"class": "input"}),
+        }
+
+
+class HonorairesPayerForm(forms.Form):
+    """Marquer les honoraires d'un médecin comme payés."""
+    honoraires_payes_le = forms.DateField(
+        widget=forms.DateInput(attrs={"class": "input", "type": "date"}),
+        label="Date de paiement",
+    )
 
 
 # ── Dossiers médicaux ────────────────────────────────────────────────────────

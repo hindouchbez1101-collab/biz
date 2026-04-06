@@ -9,8 +9,8 @@ from django.http import HttpResponse
 
 from .utils import montant_en_lettres_fr
 
-from .forms import LoginForm, PatientForm, AppointmentForm, PaymentForm, PaymentItemForm, ExpenseForm, LabPackApplyForm, SupplierForm, PurchaseForm, PurchaseItemForm, EmployeeForm, SalaryForm
-from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AuditLog, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, TarifAccouchement, AccouchementDetail, Doctor
+from .forms import LoginForm, PatientForm, AppointmentForm, PaymentForm, PaymentItemForm, ExpenseForm, LabPackApplyForm, SupplierForm, PurchaseForm, PurchaseItemForm, EmployeeForm, SalaryForm, MedecinAmbulantForm, HonorairesPayerForm
+from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AuditLog, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, TarifAccouchement, AccouchementDetail, Doctor, MedecinAmbulant
 from .permissions import require_groups, GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, in_groups
 
 
@@ -342,6 +342,7 @@ def payment_new(request):
                     except: return float(default)
                 nb_nuits = int(request.POST.get("acc_nb_nuits","1") or 1)
                 tarif_nuit = _d("acc_tarif_nuit")
+                med_amb_raw = request.POST.get("acc_medecin_ambulant", "").strip()
                 acc = AccouchementDetail(
                     payment=pay,
                     type_acte=pay.service_type,
@@ -357,6 +358,11 @@ def payment_new(request):
                     frais_chifa=_d("acc_frais_chifa"),
                     notes=request.POST.get("acc_notes","").strip(),
                 )
+                if med_amb_raw:
+                    try:
+                        acc.medecin_ambulant_id = int(med_amb_raw)
+                    except (ValueError, TypeError):
+                        pass
                 acc.save()
                 total = acc.total_frais()
 
@@ -373,6 +379,7 @@ def payment_new(request):
     tarifs = TarifAccouchement.get()
     from .models import MedicamentConsommable
     medicaments = MedicamentConsommable.objects.filter(is_active=True).order_by("nom")
+    medecins_ambulants = MedecinAmbulant.objects.filter(is_active=True)
     return render(request, "payments/form.html", {
         "form": form,
         "item_form": item_form,
@@ -382,6 +389,7 @@ def payment_new(request):
         "title": "Nouvel encaissement",
         "tarifs": tarifs,
         "medicaments": medicaments,
+        "medecins_ambulants": medecins_ambulants,
     })
 
 @login_required
@@ -1562,6 +1570,7 @@ def caisse_view(request):
             fchifa     = _f("acc_frais_chifa")
             hon_med    = _f("acc_honoraires_medecin")
             acc_notes  = request.POST.get("acc_notes", "").strip()
+            med_amb_id = request.POST.get("acc_medecin_ambulant", "").strip() or None
 
             sejour = nb_nuits * tarif_nuit
             total_frais = salle + sejour + anest + sf + meds + fadmin + cert + fchifa + hon_med
@@ -1586,13 +1595,19 @@ def caisse_view(request):
             pay.save()
 
             if service_type in ("NAT", "CES"):
-                AccouchementDetail.objects.create(
+                acc_kwargs = dict(
                     payment=pay, type_acte=service_type,
                     salle=salle, nb_nuits=nb_nuits, tarif_nuit=tarif_nuit,
                     anesthesie=anest, sage_femme=sf, medicaments=meds,
                     frais_admin=fadmin, certificat_naissance=cert,
                     frais_chifa=fchifa, honoraires_medecin=hon_med, notes=acc_notes,
                 )
+                if med_amb_id:
+                    try:
+                        acc_kwargs['medecin_ambulant_id'] = int(med_amb_id)
+                    except (ValueError, TypeError):
+                        pass
+                AccouchementDetail.objects.create(**acc_kwargs)
 
             AuditLog.objects.create(
                 actor=request.user, action="CREATE", entity="Payment",
@@ -1604,6 +1619,7 @@ def caisse_view(request):
 
     from .models import MedicamentConsommable
     medicaments = MedicamentConsommable.objects.filter(is_active=True).order_by("nom")
+    medecins_ambulants = MedecinAmbulant.objects.filter(is_active=True)
     return render(request, "payments/caisse.html", {
         "tarifs": tarifs,
         "doctors": doctors,
@@ -1612,4 +1628,96 @@ def caisse_view(request):
         "prefill_dossier_id": prefill_dossier_id,
         "service_types": ServiceType.choices,
         "medicaments": medicaments,
+        "medecins_ambulants": medecins_ambulants,
     })
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  MÉDECINS AMBULATOIRES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def medecin_ambulant_list(request):
+    medecins = MedecinAmbulant.objects.prefetch_related('accouchements').all()
+    data = []
+    for m in medecins:
+        accs = m.accouchements.select_related('payment__patient').order_by('-payment__paid_at')
+        total = m.total_honoraires()
+        payes = m.honoraires_payes()
+        dus   = m.honoraires_dus()
+        data.append({'medecin': m, 'accouchements': accs, 'total': total, 'payes': payes, 'dus': dus})
+    return render(request, 'medecins_ambulants/list.html', {'data': data})
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def medecin_ambulant_new(request):
+    form = MedecinAmbulantForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        m = form.save()
+        messages.success(request, f"Médecin « {m.full_name} » ajouté.")
+        return redirect('medecin_ambulant_detail', pk=m.pk)
+    return render(request, 'medecins_ambulants/form.html', {'form': form, 'titre': 'Nouveau médecin ambulatoire'})
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def medecin_ambulant_edit(request, pk):
+    m = get_object_or_404(MedecinAmbulant, pk=pk)
+    form = MedecinAmbulantForm(request.POST or None, instance=m)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, "Médecin mis à jour.")
+        return redirect('medecin_ambulant_detail', pk=m.pk)
+    return render(request, 'medecins_ambulants/form.html', {'form': form, 'titre': f'Modifier — {m.full_name}', 'medecin': m})
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def medecin_ambulant_detail(request, pk):
+    medecin = get_object_or_404(MedecinAmbulant, pk=pk)
+    accs = medecin.accouchements.select_related('payment__patient').order_by('-payment__paid_at')
+    payer_form = HonorairesPayerForm()
+    return render(request, 'medecins_ambulants/detail.html', {
+        'medecin': medecin,
+        'accouchements': accs,
+        'payer_form': payer_form,
+        'total': medecin.total_honoraires(),
+        'payes': medecin.honoraires_payes(),
+        'dus':   medecin.honoraires_dus(),
+    })
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def honoraires_mark_paid(request, acc_pk):
+    """Marquer les honoraires d'un AccouchementDetail comme payés."""
+    acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
+    if request.method == 'POST':
+        form = HonorairesPayerForm(request.POST)
+        if form.is_valid():
+            acc.honoraires_payes = True
+            acc.honoraires_payes_le = form.cleaned_data['honoraires_payes_le']
+            acc.save(update_fields=['honoraires_payes', 'honoraires_payes_le'])
+            messages.success(request, "Honoraires marqués comme payés.")
+    medecin_pk = acc.medecin_ambulant_id or 0
+    if medecin_pk:
+        return redirect('medecin_ambulant_detail', pk=medecin_pk)
+    return redirect('medecin_ambulant_list')
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def honoraires_mark_unpaid(request, acc_pk):
+    """Annuler le paiement des honoraires d'un AccouchementDetail."""
+    acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
+    if request.method == 'POST':
+        acc.honoraires_payes = False
+        acc.honoraires_payes_le = None
+        acc.save(update_fields=['honoraires_payes', 'honoraires_payes_le'])
+        messages.success(request, "Paiement des honoraires annulé.")
+    medecin_pk = acc.medecin_ambulant_id or 0
+    if medecin_pk:
+        return redirect('medecin_ambulant_detail', pk=medecin_pk)
+    return redirect('medecin_ambulant_list')

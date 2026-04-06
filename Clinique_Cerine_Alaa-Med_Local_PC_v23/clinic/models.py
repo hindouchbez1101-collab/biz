@@ -357,6 +357,37 @@ class ExamenMaternite(models.Model):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  MÉDECINS AMBULATOIRES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class MedecinAmbulant(models.Model):
+    full_name   = models.CharField(max_length=200, unique=True, verbose_name="Nom complet")
+    phone       = models.CharField(max_length=60, blank=True, default="", verbose_name="Téléphone")
+    specialite  = models.CharField(max_length=120, blank=True, default="", verbose_name="Spécialité")
+    is_active   = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["full_name"]
+        verbose_name = "Médecin ambulatoire"
+
+    def __str__(self):
+        return self.full_name
+
+    def total_honoraires(self):
+        return float(self.accouchements.aggregate(
+            t=models.Sum('honoraires_medecin'))['t'] or 0)
+
+    def honoraires_payes(self):
+        return float(self.accouchements.filter(honoraires_payes=True).aggregate(
+            t=models.Sum('honoraires_medecin'))['t'] or 0)
+
+    def honoraires_dus(self):
+        return float(self.accouchements.filter(honoraires_payes=False).aggregate(
+            t=models.Sum('honoraires_medecin'))['t'] or 0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  TARIFS ACCOUCHEMENT — Configurables dans les Paramètres
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -405,6 +436,9 @@ class AccouchementDetail(models.Model):
 
     # Honoraires médecin vacataire (ex: médecin extérieur appelé pour l'accouchement)
     honoraires_medecin  = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Honoraires médecin vacataire (DA)")
+    medecin_ambulant    = models.ForeignKey('MedecinAmbulant', on_delete=models.SET_NULL, null=True, blank=True, related_name='accouchements', verbose_name="Médecin ambulatoire")
+    honoraires_payes    = models.BooleanField(default=False, verbose_name="Honoraires payés")
+    honoraires_payes_le = models.DateField(null=True, blank=True, verbose_name="Payé le")
 
     # Notes libres
     notes               = models.TextField(blank=True, default='', verbose_name="Notes complémentaires")

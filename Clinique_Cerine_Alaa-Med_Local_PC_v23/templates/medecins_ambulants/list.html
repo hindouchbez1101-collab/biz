@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Médecins Ambulatoires{% endblock %}
+{% block actions %}
+  <a class="btn primary" href="{% url 'medecin_ambulant_new' %}">+ Nouveau médecin ambulatoire</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+{% if not data %}
+<div class="card" style="text-align:center;padding:48px">
+  <div style="font-size:36px;margin-bottom:12px;opacity:.4">👨‍⚕️</div>
+  <div class="muted">Aucun médecin ambulatoire enregistré.</div>
+  <a class="btn primary" href="{% url 'medecin_ambulant_new' %}" style="margin-top:16px">+ Ajouter le premier</a>
+</div>
+{% else %}
+
+{% for row in data %}
+<div class="card" style="margin-bottom:24px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+    <div>
+      <span style="font-size:1.15rem;font-weight:700">👨‍⚕️ {{ row.medecin.full_name }}</span>
+      {% if row.medecin.specialite %}
+        <span class="muted" style="margin-left:10px">{{ row.medecin.specialite }}</span>
+      {% endif %}
+      {% if row.medecin.phone %}
+        <span class="muted" style="margin-left:10px">📞 {{ row.medecin.phone }}</span>
+      {% endif %}
+      {% if not row.medecin.is_active %}
+        <span class="badge red" style="margin-left:8px">Inactif</span>
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge {% if row.dus > 0 %}red{% else %}green{% endif %}">
+        À payer : {{ row.dus|floatformat:2 }} DA
+      </span>
+      <a class="btn small" href="{% url 'medecin_ambulant_detail' row.medecin.pk %}">Détail</a>
+      <a class="btn small" href="{% url 'medecin_ambulant_edit' row.medecin.pk %}">✏️ Modifier</a>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:16px">
+    <div class="card kpi-accent-blue" style="padding:14px 18px">
+      <div class="card-label">Total honoraires</div>
+      <div class="card-kpi" style="font-size:1.3rem">{{ row.total|floatformat:2 }} DA</div>
+    </div>
+    <div class="card kpi-accent-green" style="padding:14px 18px">
+      <div class="card-label">Payés</div>
+      <div class="card-kpi" style="font-size:1.3rem">{{ row.payes|floatformat:2 }} DA</div>
+    </div>
+    <div class="card kpi-accent-amber" style="padding:14px 18px">
+      <div class="card-label">Restant dû</div>
+      <div class="card-kpi" style="font-size:1.3rem">{{ row.dus|floatformat:2 }} DA</div>
+    </div>
+  </div>
+
+  {% if row.accouchements %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Patiente</th>
+        <th>Type acte</th>
+        <th style="text-align:right">Honoraires</th>
+        <th style="text-align:center">Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for acc in row.accouchements %}
+      <tr>
+        <td>{{ acc.payment.paid_at|date:"d/m/Y" }}</td>
+        <td>{{ acc.payment.patient }}</td>
+        <td>{{ acc.get_type_acte_display }}</td>
+        <td style="text-align:right;font-weight:600">{{ acc.honoraires_medecin|floatformat:2 }} DA</td>
+        <td style="text-align:center">
+          {% if acc.honoraires_payes %}
+            <span class="badge green">✓ Payé{% if acc.honoraires_payes_le %} le {{ acc.honoraires_payes_le|date:"d/m/Y" }}{% endif %}</span>
+          {% else %}
+            <span class="badge red">Non payé</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted" style="text-align:center;padding:16px">Aucun accouchement enregistré pour ce médecin.</p>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% endif %}
+{% endblock %}
