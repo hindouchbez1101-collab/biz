@@ -58,6 +58,18 @@ class PaymentForm(forms.ModelForm):
         required=False, min_value=0, decimal_places=2, max_digits=12,
         widget=forms.NumberInput(attrs={"class": "input", "step": "0.01"}))
 
+    def clean_amount_patient(self):
+        from decimal import Decimal
+        return self.cleaned_data.get('amount_patient') or Decimal('0')
+
+    def clean_amount_third_party(self):
+        from decimal import Decimal
+        return self.cleaned_data.get('amount_third_party') or Decimal('0')
+
+    def clean_amount_total(self):
+        from decimal import Decimal
+        return self.cleaned_data.get('amount_total') or Decimal('0')
+
     class Meta:
         model = Payment
         fields = ["patient", "appointment", "service_type", "payer_type", "doctor", "amount_patient", "amount_third_party", "amount_total", "third_party_note", "note"]
