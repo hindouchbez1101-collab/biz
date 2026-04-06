@@ -592,27 +592,79 @@ def expense_edit(request, pk):
 @login_required
 @require_groups(GROUP_GERANT, GROUP_ADMIN)
 def caisse_solde(request):
-    """Vue tableau de bord caisse — solde en temps réel."""
-    from django.utils import timezone
+    """Vue tableau de bord caisse — solde filtrable par période."""
+    import datetime
     today = timezone.localdate()
 
-    # Entrées : tous les encaissements
-    entrees = Payment.objects.aggregate(s=Sum("amount_total"))["s"] or 0
+    # ── Période ────────────────────────────────────────────────────────────────
+    periode = request.GET.get("periode", "mois")  # mois | custom | tout
+    date_from_str = request.GET.get("date_from", "")
+    date_to_str   = request.GET.get("date_to", "")
 
-    # Sorties
-    depenses = Expense.objects.aggregate(s=Sum("amount"))["s"] or 0
-    salaires = Salary.objects.aggregate(s=Sum("amount"))["s"] or 0
-    achats   = Purchase.objects.aggregate(s=Sum("total_amount"))["s"] or 0
+    if periode == "tout":
+        date_from = date_to = None
+        periode_label = "Toutes périodes"
+    elif periode == "custom" and date_from_str and date_to_str:
+        try:
+            date_from = datetime.date.fromisoformat(date_from_str)
+            date_to   = datetime.date.fromisoformat(date_to_str)
+        except ValueError:
+            date_from = today.replace(day=1)
+            date_to   = today
+        periode_label = f"{date_from.strftime('%d/%m/%Y')} → {date_to.strftime('%d/%m/%Y')}"
+    else:  # mois courant par défaut
+        periode = "mois"
+        date_from = today.replace(day=1)
+        date_to   = today
+        periode_label = today.strftime("%B %Y").capitalize()
 
-    sorties  = depenses + salaires + achats
+    def _filter_payments(qs):
+        if date_from:
+            qs = qs.filter(paid_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(paid_at__date__lte=date_to)
+        return qs
+
+    def _filter_expenses(qs):
+        if date_from:
+            qs = qs.filter(spent_at__gte=date_from)
+        if date_to:
+            qs = qs.filter(spent_at__lte=date_to)
+        return qs
+
+    def _filter_salaries(qs):
+        if date_from:
+            qs = qs.filter(month__gte=date_from.replace(day=1))
+        if date_to:
+            qs = qs.filter(month__lte=date_to.replace(day=1))
+        return qs
+
+    def _filter_purchases(qs):
+        if date_from:
+            qs = qs.filter(purchased_at__gte=date_from)
+        if date_to:
+            qs = qs.filter(purchased_at__lte=date_to)
+        return qs
+
+    # ── Totaux ─────────────────────────────────────────────────────────────────
+    entrees = _filter_payments(Payment.objects.all()).aggregate(s=Sum("amount_total"))["s"] or 0
+
+    dep_qs      = _filter_expenses(Expense.objects.exclude(category='HONORAIRES'))
+    hon_qs      = _filter_expenses(Expense.objects.filter(category='HONORAIRES'))
+    sal_qs      = _filter_salaries(Salary.objects.all())
+    ach_qs      = _filter_purchases(Purchase.objects.all())
+
+    depenses    = dep_qs.aggregate(s=Sum("amount"))["s"] or 0
+    honoraires  = hon_qs.aggregate(s=Sum("amount"))["s"] or 0
+    salaires    = sal_qs.aggregate(s=Sum("amount"))["s"] or 0
+    achats      = ach_qs.aggregate(s=Sum("total_amount"))["s"] or 0
+
+    sorties  = depenses + honoraires + salaires + achats
     solde    = entrees - sorties
 
-    # Dernières opérations (journal)
-    from itertools import chain
-    import operator
-
+    # ── Journal ────────────────────────────────────────────────────────────────
     ops = []
-    for p in Payment.objects.select_related("patient").order_by("-paid_at")[:20]:
+    for p in _filter_payments(Payment.objects.select_related("patient")).order_by("-paid_at")[:25]:
         ops.append({
             "date":    p.paid_at,
             "libelle": f"Encaissement — {p.patient.last_name} {p.patient.first_name}",
@@ -620,15 +672,15 @@ def caisse_solde(request):
             "montant": float(p.amount_total),
             "ref":     p.receipt_no,
         })
-    for e in Expense.objects.select_related("created_by").order_by("-spent_at")[:20]:
+    for e in _filter_expenses(Expense.objects.select_related("created_by")).order_by("-spent_at")[:25]:
         ops.append({
             "date":    e.spent_at,
-            "libelle": f"Dépense — {e.get_category_display()} {e.note or ''}".strip(),
+            "libelle": f"{e.get_category_display()} — {e.note or ''}".strip(" —"),
             "type":    "sortie",
             "montant": float(e.amount),
             "ref":     f"DEP-{e.id}",
         })
-    for s in Salary.objects.select_related("employee").order_by("-month")[:20]:
+    for s in _filter_salaries(Salary.objects.select_related("employee")).order_by("-month")[:20]:
         ops.append({
             "date":    s.month,
             "libelle": f"Salaire — {s.employee.full_name}",
@@ -636,7 +688,7 @@ def caisse_solde(request):
             "montant": float(s.amount),
             "ref":     f"SAL-{s.id}",
         })
-    for a in Purchase.objects.select_related("supplier").order_by("-purchased_at")[:10]:
+    for a in _filter_purchases(Purchase.objects.select_related("supplier")).order_by("-purchased_at")[:10]:
         ops.append({
             "date":    a.purchased_at,
             "libelle": f"Achat — {a.supplier.name}",
@@ -649,9 +701,14 @@ def caisse_solde(request):
 
     return render(request, "finance/caisse_solde.html", {
         "solde": solde, "entrees": entrees, "sorties": sorties,
-        "depenses": depenses, "salaires": salaires, "achats": achats,
-        "ops": ops[:40],
+        "depenses": depenses, "honoraires": honoraires,
+        "salaires": salaires, "achats": achats,
+        "ops": ops[:50],
         "today": today,
+        "periode": periode,
+        "date_from": date_from_str or (date_from.isoformat() if date_from else ""),
+        "date_to":   date_to_str   or (date_to.isoformat()   if date_to   else ""),
+        "periode_label": periode_label,
     })
 
 @login_required
@@ -1573,7 +1630,8 @@ def caisse_view(request):
             med_amb_id = request.POST.get("acc_medecin_ambulant", "").strip() or None
 
             sejour = nb_nuits * tarif_nuit
-            total_frais = salle + sejour + anest + sf + meds + fadmin + cert + fchifa + hon_med
+            # honoraires_medecin exclus de la facture patient — réglés en interne
+            total_frais = salle + sejour + anest + sf + meds + fadmin + cert + fchifa
 
             tiers = float(tiers_montant) if tiers_montant else 0
             total_patient = max(0, total_frais - tiers)
@@ -1676,13 +1734,40 @@ def medecin_ambulant_edit(request, pk):
 @login_required
 @require_groups(GROUP_GERANT, GROUP_ADMIN)
 def medecin_ambulant_detail(request, pk):
+    import datetime
+    from django.db.models.functions import TruncMonth
     medecin = get_object_or_404(MedecinAmbulant, pk=pk)
     accs = medecin.accouchements.select_related('payment__patient').order_by('-payment__paid_at')
-    payer_form = HonorairesPayerForm()
+
+    # Statistiques mensuelles : nombre d'actes par mois, type d'acte, type dossier
+    monthly_raw = (
+        medecin.accouchements
+        .select_related('payment')
+        .annotate(mois=TruncMonth('payment__paid_at'))
+        .values('mois', 'type_acte', 'payment__payer_type')
+        .annotate(nb=Count('id'), total_hon=Sum('honoraires_medecin'))
+        .order_by('-mois', 'type_acte')
+    )
+    # Regrouper par mois
+    months_dict = {}
+    for row in monthly_raw:
+        m = row['mois']
+        if m not in months_dict:
+            months_dict[m] = {'nat_normal': 0, 'nat_chifa': 0, 'nat_mil': 0,
+                              'ces_normal': 0, 'ces_chifa': 0, 'ces_mil': 0,
+                              'total_hon': 0}
+        key = ('nat' if row['type_acte'] == 'NAT' else 'ces') + '_' + {
+            'NORMAL': 'normal', 'CHIFFA': 'chifa', 'MIL': 'mil'
+        }.get(row['payment__payer_type'], 'normal')
+        months_dict[m][key] = months_dict[m].get(key, 0) + row['nb']
+        months_dict[m]['total_hon'] += float(row['total_hon'] or 0)
+
+    monthly_stats = [{'mois': m, **v} for m, v in sorted(months_dict.items(), reverse=True)]
+
     return render(request, 'medecins_ambulants/detail.html', {
         'medecin': medecin,
         'accouchements': accs,
-        'payer_form': payer_form,
+        'monthly_stats': monthly_stats,
         'total': medecin.total_honoraires(),
         'payes': medecin.honoraires_payes(),
         'dus':   medecin.honoraires_dus(),
@@ -1691,16 +1776,48 @@ def medecin_ambulant_detail(request, pk):
 
 @login_required
 @require_groups(GROUP_GERANT, GROUP_ADMIN)
+def honoraires_edit_montant(request, acc_pk):
+    """Modifier le montant des honoraires d'un AccouchementDetail."""
+    acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
+    if request.method == 'POST':
+        from decimal import Decimal, InvalidOperation
+        val = request.POST.get('honoraires_medecin', '').strip()
+        try:
+            acc.honoraires_medecin = Decimal(val)
+            acc.save(update_fields=['honoraires_medecin'])
+            messages.success(request, f"Montant mis à jour : {acc.honoraires_medecin} DA")
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Montant invalide.")
+    medecin_pk = acc.medecin_ambulant_id or 0
+    if medecin_pk:
+        return redirect('medecin_ambulant_detail', pk=medecin_pk)
+    return redirect('medecin_ambulant_list')
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
 def honoraires_mark_paid(request, acc_pk):
-    """Marquer les honoraires d'un AccouchementDetail comme payés."""
+    """Marquer les honoraires d'un AccouchementDetail comme payés et créer une sortie de caisse."""
     acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
     if request.method == 'POST':
         form = HonorairesPayerForm(request.POST)
         if form.is_valid():
-            acc.honoraires_payes = True
-            acc.honoraires_payes_le = form.cleaned_data['honoraires_payes_le']
-            acc.save(update_fields=['honoraires_payes', 'honoraires_payes_le'])
-            messages.success(request, "Honoraires marqués comme payés.")
+            date_paiement = form.cleaned_data['honoraires_payes_le']
+            with transaction.atomic():
+                acc.honoraires_payes = True
+                acc.honoraires_payes_le = date_paiement
+                acc.save(update_fields=['honoraires_payes', 'honoraires_payes_le'])
+                # Déduire du solde de caisse via une Dépense
+                if acc.honoraires_medecin and float(acc.honoraires_medecin) > 0:
+                    nom_medecin = acc.medecin_ambulant.full_name if acc.medecin_ambulant else "Médecin ambulatoire"
+                    Expense.objects.create(
+                        category='HONORAIRES',
+                        amount=acc.honoraires_medecin,
+                        spent_at=date_paiement,
+                        note=f"Dr. {nom_medecin} — {acc.payment.patient} ({acc.payment.receipt_no})",
+                        created_by=request.user,
+                    )
+            messages.success(request, f"Honoraires payés et déduits de la caisse ({acc.honoraires_medecin} DA).")
     medecin_pk = acc.medecin_ambulant_id or 0
     if medecin_pk:
         return redirect('medecin_ambulant_detail', pk=medecin_pk)
@@ -1710,12 +1827,17 @@ def honoraires_mark_paid(request, acc_pk):
 @login_required
 @require_groups(GROUP_GERANT, GROUP_ADMIN)
 def honoraires_mark_unpaid(request, acc_pk):
-    """Annuler le paiement des honoraires d'un AccouchementDetail."""
+    """Annuler le paiement des honoraires — supprime aussi la dépense associée."""
     acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
     if request.method == 'POST':
-        acc.honoraires_payes = False
-        acc.honoraires_payes_le = None
-        acc.save(update_fields=['honoraires_payes', 'honoraires_payes_le'])
+        with transaction.atomic():
+            # Supprimer la dépense caisse liée (note contient le receipt_no)
+            if acc.honoraires_payes and acc.honoraires_medecin and float(acc.honoraires_medecin) > 0:
+                ref = acc.payment.receipt_no
+                Expense.objects.filter(category='HONORAIRES', note__contains=ref).delete()
+            acc.honoraires_payes = False
+            acc.honoraires_payes_le = None
+            acc.save(update_fields=['honoraires_payes', 'honoraires_payes_le'])
         messages.success(request, "Paiement des honoraires annulé.")
     medecin_pk = acc.medecin_ambulant_id or 0
     if medecin_pk:

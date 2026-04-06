@@ -128,6 +128,7 @@ class ExpenseCategory(models.TextChoices):
     MATERIEL = "MATERIEL", "Matériel"
     INTERNET = "INTERNET", "Internet"
     MAINTENANCE = "MAINTENANCE", "Maintenance"
+    HONORAIRES = "HONORAIRES", "Honoraires médecin ambulatoire"
     AUTRE = "AUTRE", "Autre"
 
 
@@ -452,6 +453,7 @@ class AccouchementDetail(models.Model):
         return (self.nb_nuits or 0) * float(self.tarif_nuit or 0)
 
     def total_frais(self):
+        """Total facturé au patient — N'inclut PAS les honoraires du médecin ambulatoire."""
         return (
             float(self.salle or 0) +
             self.sejour_total() +
@@ -460,8 +462,8 @@ class AccouchementDetail(models.Model):
             float(self.medicaments or 0) +
             float(self.frais_admin or 0) +
             float(self.certificat_naissance or 0) +
-            float(self.frais_chifa or 0) +
-            float(self.honoraires_medecin or 0)
+            float(self.frais_chifa or 0)
+            # honoraires_medecin exclus : réglés en interne depuis les recettes de la clinique
         )
 
     def __str__(self):

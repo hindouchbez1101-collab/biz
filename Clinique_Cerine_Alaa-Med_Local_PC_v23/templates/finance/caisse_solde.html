@@ -7,11 +7,40 @@
 {% endblock %}
 {% block content %}
 
-<!-- Solde principal -->
+<!-- ── Filtre de période ─────────────────────────────────────────────────── -->
+<div class="card" style="padding:16px 20px;margin-bottom:16px">
+  <form method="get" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <span style="font-weight:700;font-size:13px">Période :</span>
+
+    <a href="?periode=mois" class="btn {% if periode == 'mois' %}primary{% endif %}" style="font-size:12px">
+      Ce mois
+    </a>
+    <a href="?periode=tout" class="btn {% if periode == 'tout' %}primary{% endif %}" style="font-size:12px">
+      Toutes périodes
+    </a>
+
+    <span style="color:var(--muted);font-size:12px">|  Personnalisé :</span>
+    <input type="hidden" name="periode" value="custom">
+    <input class="input" type="date" name="date_from" value="{{ date_from }}"
+      style="width:140px;font-size:12px;padding:6px 8px">
+    <span class="muted">→</span>
+    <input class="input" type="date" name="date_to" value="{{ date_to }}"
+      style="width:140px;font-size:12px;padding:6px 8px">
+    <button class="btn primary" type="submit" style="font-size:12px">Filtrer</button>
+
+    <span style="margin-left:auto;color:var(--muted);font-size:12px;font-style:italic">
+      📅 {{ periode_label }}
+    </span>
+  </form>
+</div>
+
+<!-- ── Solde principal ───────────────────────────────────────────────────── -->
 <div class="card" style="border-top: 4px solid {% if solde >= 0 %}var(--accent2){% else %}#ef4444{% endif %}; padding: 28px 32px; margin-bottom: 4px;">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
     <div>
-      <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:8px;">Solde de caisse — toutes périodes</div>
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:8px;">
+        Solde de caisse — {{ periode_label }}
+      </div>
       <div style="font-family:var(--font-serif); font-style:italic; font-size:48px; font-weight:900; line-height:1;
                   color:{% if solde >= 0 %}var(--accent2){% else %}#ef4444{% endif %};">
         {{ solde|floatformat:2 }}
@@ -34,28 +63,33 @@
   </div>
 </div>
 
-<!-- Décomposition des sorties -->
-<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+<!-- ── Décomposition des sorties ─────────────────────────────────────────── -->
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; margin-bottom:4px;">
   <div class="card">
     <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px;">Dépenses courantes</div>
     <div style="font-size:22px; font-weight:800; color:#f87171;">−{{ depenses|floatformat:2 }} DA</div>
-    <a href="/depenses/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir les dépenses →</a>
+    <a href="/depenses/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir →</a>
   </div>
   <div class="card">
     <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px;">Salaires versés</div>
     <div style="font-size:22px; font-weight:800; color:#f59e0b;">−{{ salaires|floatformat:2 }} DA</div>
-    <a href="/rh/salaires/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir les salaires →</a>
+    <a href="/rh/salaires/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir →</a>
+  </div>
+  <div class="card">
+    <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px;">Honoraires méd. amb.</div>
+    <div style="font-size:22px; font-weight:800; color:#a855f7;">−{{ honoraires|floatformat:2 }} DA</div>
+    <a href="/medecins-ambulants/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir →</a>
   </div>
   <div class="card">
     <div style="font-size:10px; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:6px;">Achats stock</div>
     <div style="font-size:22px; font-weight:800; color:var(--muted);">−{{ achats|floatformat:2 }} DA</div>
-    <a href="/stock/achats/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir les achats →</a>
+    <a href="/stock/achats/" style="font-size:12px; color:var(--accent); margin-top:6px; display:block;">Voir →</a>
   </div>
 </div>
 
-<!-- Journal des opérations -->
+<!-- ── Journal des opérations ────────────────────────────────────────────── -->
 <div class="card">
-  <div class="card-title">📒 Journal des opérations (40 dernières)</div>
+  <div class="card-title">📒 Journal des opérations — {{ periode_label }}</div>
   <table class="table">
     <thead>
       <tr>
@@ -90,7 +124,7 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="muted" style="text-align:center; padding:28px;">Aucune opération enregistrée.</td></tr>
+      <tr><td colspan="6" class="muted" style="text-align:center; padding:28px;">Aucune opération sur cette période.</td></tr>
       {% endfor %}
     </tbody>
   </table>
