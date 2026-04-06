@@ -177,6 +177,13 @@
         </div>
 
         <div class="cf-field span-2">
+          <label class="cf-label">👨‍⚕️ Honoraires médecin vacataire <span class="opt">DA — optionnel</span></label>
+          <input class="cf-input" type="number" name="acc_honoraires_medecin" id="fHonMed"
+            step="0.01" min="0" value="0" oninput="recalc()">
+          <div class="cf-hint" style="margin-top:4px">Médecin extérieur appelé spécialement pour l'intervention</div>
+        </div>
+
+        <div class="cf-field span-2">
           <label class="cf-label">🧴 Médicaments &amp; consommables utilisés</label>
           <div id="medsRows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -391,7 +398,8 @@ function recalc() {
   const admin   = gf('fAdmin');
   const cert    = gf('fCert');
   const chifa   = gf('fChifa');
-  const total   = salle + sejour + anest + sf + meds + admin + cert + chifa;
+  const honMed  = gf('fHonMed');
+  const total   = salle + sejour + anest + sf + meds + admin + cert + chifa + honMed;
 
   document.getElementById('fSejourTotal').textContent =
     sejour.toLocaleString('fr-DZ') + ' DA (' + nuits + ' nuit' + (nuits>1?'s':'') + ' × ' + tNuit.toLocaleString('fr-DZ') + ' DA)';
@@ -406,6 +414,7 @@ function recalc() {
   if (admin)  lines.push(['Frais administratifs', admin]);
   if (cert)   lines.push(['Certificat de naissance', cert]);
   if (chifa)  lines.push(['Frais dossier Chifa/Militaire', chifa]);
+  if (honMed) lines.push(['Honoraires médecin vacataire', honMed]);
 
   document.getElementById('recapLines').innerHTML = lines.map(([l, v]) =>
     `<div class="recap-line"><span class="rl">${l}</span><span class="rv">${v.toLocaleString('fr-DZ')} DA</span></div>`
@@ -418,7 +427,7 @@ function recalc() {
 function updateMontantPatient(total) {
   if (total === undefined) {
     const salle=gf('fSalle'),nuits=parseInt(document.getElementById('fNbNuits')?.value||'1')||0,tNuit=gf('fTarifNuit');
-    total = salle + nuits*tNuit + gf('fAnest') + gf('fSf') + gf('fMeds') + gf('fAdmin') + gf('fCert') + gf('fChifa');
+    total = salle + nuits*tNuit + gf('fAnest') + gf('fSf') + gf('fMeds') + gf('fAdmin') + gf('fCert') + gf('fChifa') + gf('fHonMed');
   }
   const tiersEl = document.getElementById('tiersMontant');
   const tiers = tiersEl ? parseFloat(tiersEl.value||'0')||0 : 0;
