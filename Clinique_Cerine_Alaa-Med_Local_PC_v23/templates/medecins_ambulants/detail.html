@@ -7,6 +7,7 @@
 {% block content %}
 <link rel="stylesheet" href="/static/forms.css">
 
+<!-- ── En-tête médecin ── -->
 <div class="card" style="margin-bottom:20px">
   <div style="font-size:1.2rem;font-weight:700;margin-bottom:6px">
     👨‍⚕️ {{ medecin.full_name }}
@@ -16,13 +17,14 @@
   {% if medecin.phone %}<div class="muted">Téléphone : {{ medecin.phone }}</div>{% endif %}
 </div>
 
+<!-- ── KPIs totaux ── -->
 <div class="grid-3" style="margin-bottom:24px">
   <div class="card kpi-accent-blue" style="padding:14px 18px">
     <div class="card-label">Total honoraires</div>
     <div class="card-kpi">{{ total|floatformat:2 }} DA</div>
   </div>
   <div class="card kpi-accent-green" style="padding:14px 18px">
-    <div class="card-label">Payés</div>
+    <div class="card-label">Payés (déduits caisse)</div>
     <div class="card-kpi">{{ payes|floatformat:2 }} DA</div>
   </div>
   <div class="card kpi-accent-amber" style="padding:14px 18px">
@@ -31,37 +33,112 @@
   </div>
 </div>
 
+<!-- ── Statistiques mensuelles ── -->
+{% if monthly_stats %}
+<div class="card" style="margin-bottom:24px">
+  <div class="cf-section-title" style="margin-bottom:12px">📊 Statistiques par mois</div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Mois</th>
+        <th style="text-align:center" colspan="3">Accouchements naturels</th>
+        <th style="text-align:center" colspan="3">Césariennes</th>
+        <th style="text-align:center">Total actes</th>
+        <th style="text-align:right">Honoraires</th>
+      </tr>
+      <tr style="font-size:11px;color:var(--muted)">
+        <th></th>
+        <th style="text-align:center">Général</th>
+        <th style="text-align:center">Chifa</th>
+        <th style="text-align:center">Militaire</th>
+        <th style="text-align:center">Général</th>
+        <th style="text-align:center">Chifa</th>
+        <th style="text-align:center">Militaire</th>
+        <th></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in monthly_stats %}
+      {% with total_actes=s.nat_normal|add:s.nat_chifa|add:s.nat_mil|add:s.ces_normal|add:s.ces_chifa|add:s.ces_mil %}
+      <tr>
+        <td style="font-weight:700">{{ s.mois|date:"F Y"|capfirst }}</td>
+        <td style="text-align:center">{% if s.nat_normal %}<span class="badge green">{{ s.nat_normal }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.nat_chifa %}<span class="badge blue">{{ s.nat_chifa }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.nat_mil %}<span class="badge">{{ s.nat_mil }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.ces_normal %}<span class="badge green">{{ s.ces_normal }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.ces_chifa %}<span class="badge blue">{{ s.ces_chifa }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.ces_mil %}<span class="badge">{{ s.ces_mil }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center;font-weight:700">{{ total_actes }}</td>
+        <td style="text-align:right;font-weight:700">{{ s.total_hon|floatformat:2 }} DA</td>
+      </tr>
+      {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ── Liste des accouchements ── -->
 <div class="card">
-  <div class="cf-section-title" style="margin-bottom:16px">Accouchements réalisés</div>
+  <div class="cf-section-title" style="margin-bottom:16px">Détail des accouchements</div>
   {% if accouchements %}
   <table class="table">
     <thead>
       <tr>
         <th>Date</th>
         <th>Patiente</th>
-        <th>Type acte</th>
+        <th>Acte</th>
+        <th>Dossier</th>
         <th style="text-align:right">Honoraires (DA)</th>
-        <th style="text-align:center">Statut paiement</th>
-        <th style="text-align:center">Action</th>
+        <th style="text-align:center">Statut</th>
+        <th style="text-align:center">Actions</th>
       </tr>
     </thead>
     <tbody>
       {% for acc in accouchements %}
       <tr>
-        <td>{{ acc.payment.paid_at|date:"d/m/Y" }}</td>
+        <td style="white-space:nowrap">{{ acc.payment.paid_at|date:"d/m/Y" }}</td>
         <td>
-          <a href="{% url 'patient_detail' acc.payment.patient.pk %}">{{ acc.payment.patient }}</a>
-          <br><span class="muted" style="font-size:.82rem">Reçu {{ acc.payment.receipt_no }}</span>
+          <a href="{% url 'patient_detail' acc.payment.patient.pk %}">{{ acc.payment.patient.last_name }} {{ acc.payment.patient.first_name }}</a>
+          <br><span class="muted" style="font-size:.8rem">Reçu {{ acc.payment.receipt_no }}</span>
         </td>
-        <td>{{ acc.get_type_acte_display }}</td>
-        <td style="text-align:right;font-weight:700;font-size:1.05rem">
-          {{ acc.honoraires_medecin|floatformat:2 }}
+        <td>
+          {% if acc.type_acte == "CES" %}
+            <span class="badge red">Césarienne</span>
+          {% else %}
+            <span class="badge green">Nat.</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if acc.payment.payer_type == "CHIFFA" %}
+            <span class="badge blue">Chifa</span>
+          {% elif acc.payment.payer_type == "MIL" %}
+            <span class="badge">Militaire</span>
+          {% else %}
+            <span class="muted">Général</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right">
+          <!-- Édition inline du montant -->
+          <form method="post" action="{% url 'honoraires_edit_montant' acc.pk %}"
+            style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+            {% csrf_token %}
+            <input type="number" name="honoraires_medecin"
+              value="{{ acc.honoraires_medecin }}"
+              step="0.01" min="0" style="width:100px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;text-align:right"
+              {% if acc.honoraires_payes %}disabled{% endif %}>
+            {% if not acc.honoraires_payes %}
+            <button type="submit" class="btn small" title="Enregistrer"
+              style="padding:4px 8px;font-size:12px">💾</button>
+            {% endif %}
+          </form>
         </td>
         <td style="text-align:center">
           {% if acc.honoraires_payes %}
             <span class="badge green">✓ Payé</span>
             {% if acc.honoraires_payes_le %}
-              <div class="muted" style="font-size:.8rem">{{ acc.honoraires_payes_le|date:"d/m/Y" }}</div>
+              <div class="muted" style="font-size:.78rem">{{ acc.honoraires_payes_le|date:"d/m/Y" }}</div>
             {% endif %}
           {% else %}
             <span class="badge red">Non payé</span>
@@ -73,15 +150,15 @@
             {% csrf_token %}
             <input type="hidden" name="honoraires_payes_le" value="{% now 'Y-m-d' %}">
             <button class="btn small primary" type="submit"
-              onclick="return confirm('Marquer les honoraires comme payés ?')">
-              ✓ Marquer payé
+              onclick="return confirm('Payer {{ acc.honoraires_medecin }} DA et déduire de la caisse ?')">
+              ✓ Payer
             </button>
           </form>
           {% else %}
           <form method="post" action="{% url 'honoraires_mark_unpaid' acc.pk %}" style="display:inline">
             {% csrf_token %}
             <button class="btn small" type="submit"
-              onclick="return confirm('Annuler ce paiement ?')"
+              onclick="return confirm('Annuler ce paiement et réintégrer en caisse ?')"
               style="color:#ef4444;border-color:#ef4444">
               ✕ Annuler
             </button>
