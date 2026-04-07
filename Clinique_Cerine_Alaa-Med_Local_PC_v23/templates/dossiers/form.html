@@ -200,15 +200,25 @@ function goStep(n) {
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
-// Adapter le label du N° selon le type
+// Adapter le label du N° selon le type + mise à jour du N° dossier
 const typeSel = document.getElementById('typeDossier');
 const labelNumAss = document.getElementById('labelNumAss');
 const fieldNumAss = document.getElementById('fieldNumAss');
+const numeroInput = document.querySelector('input[name="numero"]');
+const autoNumeros = {{ auto_numeros|default:"{}" }};
 function updateNumAssLabel() {
   const t = typeSel.value;
   if (t === 'CHIFA')     { labelNumAss.textContent = 'N° Assurance (Chifa)'; fieldNumAss.style.display = ''; }
   else if (t === 'MILITAIRE') { labelNumAss.textContent = 'N° Militaire'; fieldNumAss.style.display = ''; }
   else { fieldNumAss.style.display = 'none'; }
+  // Auto-update dossier number when type changes (only if user hasn't typed manually)
+  if (numeroInput && autoNumeros[t]) {
+    const vals = Object.values(autoNumeros);
+    if (!numeroInput.value || vals.includes(numeroInput.value)) {
+      numeroInput.value = autoNumeros[t];
+      numeroInput.placeholder = autoNumeros[t];
+    }
+  }
 }
 typeSel.addEventListener('change', updateNumAssLabel);
 updateNumAssLabel();

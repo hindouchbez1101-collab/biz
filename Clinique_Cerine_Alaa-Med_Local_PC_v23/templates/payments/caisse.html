@@ -412,8 +412,8 @@ function recalc() {
   const admin   = gf('fAdmin');
   const cert    = gf('fCert');
   const chifa   = gf('fChifa');
-  const honMed  = gf('fHonMed');
-  const total   = salle + sejour + anest + sf + meds + admin + cert + chifa + honMed;
+  // honMed est saisi pour le suivi interne mais n'est PAS inclus dans la facture patient
+  const total   = salle + sejour + anest + sf + meds + admin + cert + chifa;
 
   document.getElementById('fSejourTotal').textContent =
     sejour.toLocaleString('fr-DZ') + ' DA (' + nuits + ' nuit' + (nuits>1?'s':'') + ' × ' + tNuit.toLocaleString('fr-DZ') + ' DA)';
@@ -428,7 +428,6 @@ function recalc() {
   if (admin)  lines.push(['Frais administratifs', admin]);
   if (cert)   lines.push(['Certificat de naissance', cert]);
   if (chifa)  lines.push(['Frais dossier Chifa/Militaire', chifa]);
-  if (honMed) lines.push(['Honoraires médecin vacataire', honMed]);
 
   document.getElementById('recapLines').innerHTML = lines.map(([l, v]) =>
     `<div class="recap-line"><span class="rl">${l}</span><span class="rv">${v.toLocaleString('fr-DZ')} DA</span></div>`
@@ -441,7 +440,7 @@ function recalc() {
 function updateMontantPatient(total) {
   if (total === undefined) {
     const salle=gf('fSalle'),nuits=parseInt(document.getElementById('fNbNuits')?.value||'1')||0,tNuit=gf('fTarifNuit');
-    total = salle + nuits*tNuit + gf('fAnest') + gf('fSf') + gf('fMeds') + gf('fAdmin') + gf('fCert') + gf('fChifa') + gf('fHonMed');
+    total = salle + nuits*tNuit + gf('fAnest') + gf('fSf') + gf('fMeds') + gf('fAdmin') + gf('fCert') + gf('fChifa');
   }
   const tiersEl = document.getElementById('tiersMontant');
   const tiers = tiersEl ? parseFloat(tiersEl.value||'0')||0 : 0;

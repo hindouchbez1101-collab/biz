@@ -14,11 +14,15 @@ from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest
 from .permissions import require_groups, GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, in_groups
 
 
-def _next_dossier_numero():
-    """Génère un numéro automatique : DOS-YYYY-NNNN"""
+def _next_dossier_numero(type_dossier="GENERAL"):
+    """Génère un numéro automatique selon le type :
+    GENERAL → DOS-YYYY-NNNN | CHIFA → CH-YYYY-NNNN | MILITAIRE → MIL-YYYY-NNNN
+    """
     from django.utils import timezone
     year = timezone.now().year
-    prefix = f"DOS-{year}-"
+    prefix_map = {"GENERAL": "DOS", "CHIFA": "CH", "MILITAIRE": "MIL"}
+    code = prefix_map.get(type_dossier, "DOS")
+    prefix = f"{code}-{year}-"
     last = (DossierMaternite.objects
             .filter(numero__startswith=prefix)
             .order_by("-numero")
@@ -133,6 +137,22 @@ def patient_detail(request, pk:int):
 def appointment_list(request):
     import datetime
     today = timezone.localdate()
+    q = (request.GET.get("q") or "").strip()
+
+    # Mode recherche par nom
+    if q:
+        qs = (Appointment.objects
+              .filter(patient__last_name__icontains=q) |
+              Appointment.objects.filter(patient__first_name__icontains=q) |
+              Appointment.objects.filter(patient__phone__icontains=q))
+        qs = qs.select_related("patient", "doctor").order_by("-start_at")[:100]
+        return render(request, "rdv/list.html", {
+            "appointments": qs, "q": q,
+            "day": today, "prev_day": today, "next_day": today, "today": today,
+            "stats": {"confirmed": 0, "done": 0, "cancelled": 0, "pending": 0},
+            "search_mode": True,
+        })
+
     day = request.GET.get("day")
     if day:
         try:
@@ -154,6 +174,7 @@ def appointment_list(request):
         "appointments": qs, "day": day,
         "prev_day": prev_day, "next_day": next_day,
         "today": today, "stats": stats,
+        "q": q, "search_mode": False,
     })
 
 @login_required
@@ -672,13 +693,23 @@ def caisse_solde(request):
             "montant": float(p.amount_total),
             "ref":     p.receipt_no,
         })
-    for e in _filter_expenses(Expense.objects.select_related("created_by")).order_by("-spent_at")[:25]:
+    for e in _filter_expenses(Expense.objects.exclude(category='HONORAIRES').select_related("created_by")).order_by("-spent_at")[:25]:
         ops.append({
             "date":    e.spent_at,
-            "libelle": f"{e.get_category_display()} — {e.note or ''}".strip(" —"),
+            "libelle": f"Dépense — {e.get_category_display()} {e.note or ''}".strip(),
             "type":    "sortie",
+            "sous_type": "depense",
             "montant": float(e.amount),
             "ref":     f"DEP-{e.id}",
+        })
+    for e in _filter_expenses(Expense.objects.filter(category='HONORAIRES').select_related("created_by")).order_by("-spent_at")[:25]:
+        ops.append({
+            "date":    e.spent_at,
+            "libelle": f"Honoraires méd. amb. — {e.note or ''}".strip(" —"),
+            "type":    "sortie",
+            "sous_type": "honoraires",
+            "montant": float(e.amount),
+            "ref":     f"HON-{e.id}",
         })
     for s in _filter_salaries(Salary.objects.select_related("employee")).order_by("-month")[:20]:
         ops.append({
@@ -1269,16 +1300,18 @@ def dossier_list(request):
 @require_groups(GROUP_RECEPTION, GROUP_ADMIN)
 def dossier_new(request, patient_pk):
     patient = get_object_or_404(Patient, pk=patient_pk)
-    auto_numero = _next_dossier_numero()
+    # Determine type from POST or default to CHIFA (most common)
+    type_dossier = request.POST.get("type_dossier", "CHIFA") if request.method == "POST" else "CHIFA"
+    auto_numero = _next_dossier_numero(type_dossier)
     form = DossierMaterniteForm(request.POST or None, initial={
         "nom":           patient.last_name,
         "prenom":        patient.first_name,
         "date_naissance":patient.birth_date,
         "numero":        auto_numero,
+        "type_dossier":  type_dossier,
     })
     if request.method == "POST" and form.is_valid():
         d = form.save(commit=False)
-        # If numero left blank, use auto
         if not d.numero:
             d.numero = auto_numero
         d.patient    = patient
@@ -1288,9 +1321,15 @@ def dossier_new(request, patient_pk):
                                 entity_id=str(d.id), message=str(d))
         messages.success(request, f"Dossier {d.numero} créé.")
         return redirect("dossier_detail", pk=d.id)
+    # Pass pre-computed numbers for all types so JS can switch without server round-trip
     return render(request, "dossiers/form.html", {
         "form": form, "patient": patient, "title": "Nouveau dossier maternité",
         "auto_numero": auto_numero,
+        "auto_numeros": {
+            "GENERAL":   _next_dossier_numero("GENERAL"),
+            "CHIFA":     _next_dossier_numero("CHIFA"),
+            "MILITAIRE": _next_dossier_numero("MILITAIRE"),
+        },
     })
 
 
