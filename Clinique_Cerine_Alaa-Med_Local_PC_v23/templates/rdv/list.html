@@ -5,6 +5,20 @@
 {% endblock %}
 {% block content %}
 
+<!-- Barre de recherche -->
+<div class="card" style="padding:12px 18px;margin-bottom:8px">
+  <form method="get" style="display:flex;gap:8px;align-items:center">
+    <input class="input" type="text" name="q" value="{{ q|default:'' }}"
+      placeholder="🔍 Rechercher par nom, prénom ou téléphone…"
+      style="flex:1;max-width:400px">
+    <button class="btn primary" type="submit">Rechercher</button>
+    {% if search_mode %}
+    <a class="btn" href="/rdv/">← Retour au calendrier</a>
+    {% endif %}
+  </form>
+</div>
+
+{% if not search_mode %}
 <!-- Navigation par jour -->
 <div class="card" style="padding:14px 18px">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
@@ -41,16 +55,25 @@
     </div>
   </div>
 </div>
+{% else %}
+<div class="card" style="padding:10px 18px;background:color-mix(in srgb,var(--accent) 8%,transparent)">
+  Résultats pour <b>« {{ q }} »</b> — {{ appointments|length }} RDV trouvé(s)
+</div>
+{% endif %}
 
 <!-- Liste RDV -->
 <div class="card">
   <table class="table">
     <thead>
-      <tr><th>Heure</th><th>Patient</th><th>Type de soin</th><th>Médecin</th><th>Note</th><th>Statut</th><th>Actions</th></tr>
+      <tr>
+        {% if search_mode %}<th>Date</th>{% endif %}
+        <th>Heure</th><th>Patient</th><th>Type de soin</th><th>Médecin</th><th>Note</th><th>Statut</th><th>Actions</th>
+      </tr>
     </thead>
     <tbody>
       {% for r in appointments %}
       <tr>
+        {% if search_mode %}<td class="muted" style="font-size:12px;white-space:nowrap">{{ r.start_at|date:"d/m/Y" }}</td>{% endif %}
         <td><b style="font-size:15px">{{ r.start_at|date:"H:i" }}</b></td>
         <td>
           <a href="/patients/{{ r.patient.id }}/" style="font-weight:600">{{ r.patient.last_name }} {{ r.patient.first_name }}</a>
@@ -73,9 +96,9 @@
         </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="muted" style="text-align:center;padding:36px">
+      <tr><td colspan="8" class="muted" style="text-align:center;padding:36px">
         <div style="font-size:28px;margin-bottom:10px;opacity:.4">📅</div>
-        Aucun rendez-vous le {{ day|date:"d/m/Y" }}.
+        {% if search_mode %}Aucun rendez-vous trouvé pour « {{ q }} ».{% else %}Aucun rendez-vous le {{ day|date:"d/m/Y" }}.{% endif %}
       </td></tr>
       {% endfor %}
     </tbody>

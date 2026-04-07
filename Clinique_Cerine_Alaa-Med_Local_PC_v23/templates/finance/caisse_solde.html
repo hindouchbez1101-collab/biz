@@ -3,7 +3,6 @@
 {% block actions %}
   <a class="btn" href="/rapports/">📈 Rapports</a>
   <a class="btn" href="/depenses/new/">+ Dépense</a>
-  <a class="btn" href="/rh/salaires/new/">+ Salaire</a>
 {% endblock %}
 {% block content %}
 
@@ -118,6 +117,8 @@
         <td style="text-align:right;">
           {% if op.type == "entree" %}
             <span class="badge green">↑ Entrée</span>
+          {% elif op.sous_type == "honoraires" %}
+            <span class="badge" style="background:color-mix(in srgb,#a855f7 15%,transparent);color:#a855f7;border-color:#a855f7">👨‍⚕️ Honoraires</span>
           {% else %}
             <span class="badge red">↓ Sortie</span>
           {% endif %}
