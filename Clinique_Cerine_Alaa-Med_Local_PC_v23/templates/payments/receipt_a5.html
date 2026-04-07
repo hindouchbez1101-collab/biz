@@ -3,205 +3,400 @@
 <head>
   <meta charset="utf-8"/>
   <title>Reçu {{ pay.receipt_no }}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,700&display=swap" rel="stylesheet">
   <style>
-    @page { size: A5; margin: 8mm 10mm; }
-    *, *::before, *::after { box-sizing: border-box; }
-    body { font-family: 'DM Sans', Arial, sans-serif; color: #0a1220; background: #fff; font-size: 12px; line-height: 1.5; margin: 0; }
-    .header { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:10px; border-bottom:2px solid #0a1220; margin-bottom:12px; }
-    .clinic-name { font-family:'Instrument Serif',serif; font-style:italic; font-size:17px; line-height:1.2; }
-    .clinic-sub { font-size:10px; color:#5a6e90; margin-top:3px; }
-    .receipt-meta { text-align:right; }
-    .receipt-no { font-size:14px; font-weight:800; font-family:monospace; }
-    .receipt-date { font-size:11px; color:#5a6e90; }
-    .barcode img { height:36px; margin-top:4px; }
-    .body-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
-    .info-block { padding:8px 10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8faff; }
-    .info-title { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#5a6e90; font-weight:700; margin-bottom:5px; }
-    .info-name { font-weight:700; font-size:12px; margin-bottom:2px; }
-    .info-detail { font-size:11px; color:#5a6e90; }
+    @page { size: A5; margin: 12mm 14mm; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      color: #000;
+      background: #fff;
+      line-height: 1.4;
+    }
 
-    /* Détail standard */
-    .service-block { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:8px; }
-    .service-header { background:#0a1220; color:#fff; padding:7px 10px; font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:700; }
-    .service-body { padding:8px 10px; }
-    .service-name { font-size:14px; font-weight:800; margin-bottom:4px; }
-    .service-detail { font-size:11px; color:#5a6e90; line-height:1.7; }
+    /* ── En-tête ──────────────────────────────────────────────── */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #000;
+    }
+    .clinic-block .clinic-name {
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    .clinic-block .clinic-sub {
+      font-size: 9px;
+      margin-top: 3px;
+      color: #333;
+      line-height: 1.6;
+    }
+    .date-block {
+      text-align: right;
+      font-size: 11px;
+    }
+    .date-block .city-date {
+      font-weight: 700;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .date-block .patient-info {
+      font-size: 10px;
+      line-height: 1.7;
+      text-align: right;
+    }
+    .date-block .patient-name {
+      font-weight: 700;
+      font-size: 12px;
+    }
 
-    /* Détail accouchement */
-    .acc-block { border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:8px; }
-    .acc-header { background:#0a1220; color:#fff; padding:7px 10px; font-size:10px; text-transform:uppercase; letter-spacing:.8px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
-    .acc-table { width:100%; border-collapse:collapse; }
-    .acc-table tr { border-bottom:1px solid #f0f4ff; }
-    .acc-table tr:last-child { border-bottom:none; }
-    .acc-table td { padding:5px 10px; font-size:11px; }
-    .acc-table td:last-child { text-align:right; font-weight:700; white-space:nowrap; }
-    .acc-table tr.sub td { color:#5a6e90; font-size:10px; padding:3px 10px; }
-    .acc-table tr.total-row td { font-weight:800; font-size:12px; background:#f8faff; border-top:1.5px solid #0a1220; }
+    /* ── N° reçu ──────────────────────────────────────────────── */
+    .receipt-ref {
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #000;
+      padding-bottom: 6px;
+    }
+    .receipt-ref span {
+      font-family: monospace;
+      font-size: 13px;
+    }
 
-    /* Montants */
-    .amounts-block { border:1.5px solid #0a1220; border-radius:8px; overflow:hidden; margin-bottom:8px; }
-    .amounts-row { display:flex; justify-content:space-between; align-items:center; padding:7px 10px; border-bottom:1px solid #e2e8f0; }
-    .amounts-row:last-child { border-bottom:none; }
-    .amounts-row.total { background:#0a1220; color:#fff; }
-    .amounts-label { font-size:11px; color:#5a6e90; }
-    .amounts-row.total .amounts-label { color:rgba(255,255,255,.65); }
-    .amounts-val { font-weight:700; font-size:12px; }
-    .amounts-row.total .amounts-val { font-size:15px; }
+    /* ── Tableau principal ────────────────────────────────────── */
+    .inv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0;
+    }
+    .inv-table th, .inv-table td {
+      border: 1px solid #000;
+      padding: 5px 8px;
+      vertical-align: top;
+    }
+    .inv-table thead th {
+      background: #f0f0f0;
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .inv-table thead th:first-child { text-align: left; }
+    .inv-table tbody td.amount { text-align: right; white-space: nowrap; font-weight: 600; }
+    .inv-table tbody td.center { text-align: center; }
+    .inv-table tbody tr.sub-row td { font-size: 9px; color: #555; padding: 2px 8px; border-top: none; }
+    .inv-table tbody tr.sub-row td { border-top: 0; }
+    .inv-table tfoot tr td {
+      border: 1px solid #000;
+      padding: 5px 8px;
+      font-weight: 700;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .inv-table tfoot tr td:first-child {
+      text-align: left;
+      text-transform: uppercase;
+      font-size: 10px;
+      letter-spacing: .3px;
+    }
+    .inv-table tfoot tr.grand-total td {
+      font-size: 12px;
+      font-weight: 900;
+      background: #f0f0f0;
+    }
+    .inv-table tfoot tr.tiers td { font-weight: 600; }
 
-    /* Lettres */
-    .lettres-block { padding:7px 10px; border:1px solid #e2e8f0; border-radius:8px; font-style:italic; font-size:11px; margin-bottom:10px; background:#f8faff; }
-    .lettres-label { font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#5a6e90; font-style:normal; font-weight:700; margin-bottom:3px; }
+    /* ── Zone tampon + lettres ────────────────────────────────── */
+    .bottom-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #000;
+    }
+    .lettres-block {
+      flex: 1;
+      font-size: 10px;
+    }
+    .lettres-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .lettres-text {
+      font-style: italic;
+      border-bottom: 1px dotted #000;
+      padding-bottom: 4px;
+      min-height: 20px;
+    }
+    .stamp-block {
+      text-align: center;
+      width: 90px;
+      flex-shrink: 0;
+    }
+    .stamp-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .stamp-box {
+      width: 80px;
+      height: 50px;
+      border: 1.5px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      color: #aaa;
+      border-radius: 4px;
+      margin: 0 auto;
+    }
 
-    /* Footer */
-    .footer { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:8px; border-top:1px solid #e2e8f0; }
-    .footer-label { font-size:9px; text-transform:uppercase; letter-spacing:.8px; color:#5a6e90; font-weight:700; margin-bottom:3px; }
-    .footer-val { font-weight:700; font-size:11px; }
-    .stamp { display:inline-block; border:2px solid #1d6fee; color:#1d6fee; font-weight:900; font-size:12px; letter-spacing:2px; padding:3px 8px; border-radius:4px; transform:rotate(-8deg); }
+    /* ── Notes ───────────────────────────────────────────────── */
+    .notes-row {
+      font-size: 9px;
+      font-style: italic;
+      color: #555;
+      margin-top: 6px;
+      border-top: 1px dotted #ccc;
+      padding-top: 4px;
+    }
 
-    .print-actions { position:fixed; bottom:14px; right:14px; display:flex; gap:8px; z-index:999; }
-    .print-btn { padding:9px 16px; border-radius:100px; border:1.5px solid #0a1220; background:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700; }
-    .print-btn.primary { background:#0a1220; color:#fff; }
-    @media print { .print-actions { display:none; } }
+    /* ── Footer ─────────────────────────────────────────────── */
+    .page-footer {
+      margin-top: 14px;
+      padding-top: 6px;
+      border-top: 1px solid #000;
+      font-size: 9px;
+      color: #333;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ── Boutons impression ──────────────────────────────────── */
+    .print-actions {
+      position: fixed;
+      bottom: 14px;
+      right: 14px;
+      display: flex;
+      gap: 8px;
+      z-index: 999;
+    }
+    .print-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1.5px solid #000;
+      background: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .print-btn.primary { background: #000; color: #fff; }
+    @media print { .print-actions { display: none; } }
   </style>
 </head>
 <body>
 
 <div class="print-actions">
-  <button class="print-btn" onclick="window.print()">🖨️ Imprimer</button>
-  <a href="/" class="print-btn primary" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">✔ Terminer</a>
+  <button class="print-btn" onclick="window.print()">Imprimer</button>
+  <a href="/" class="print-btn primary" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Terminer</a>
 </div>
 
-<!-- En-tête -->
-<div class="header">
-  <div>
+<!-- ══ EN-TÊTE ═══════════════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="clinic-block">
     <div class="clinic-name">Clinique Cerine Alaa-Med</div>
-    <div class="clinic-sub">Établissement Hospitalier Privé · Chorfa (Bradaï) Chlef</div>
+    <div class="clinic-sub">
+      Établissement Hospitalier Privé (EHP)<br>
+      Chorfa (Bradaï) — Chlef, Algérie<br>
+      Tél : — &nbsp; Fax : —
+    </div>
   </div>
-  <div class="receipt-meta">
-    <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5a6e90;margin-bottom:2px">Reçu N°</div>
-    <div class="receipt-no">{{ pay.receipt_no }}</div>
-    <div class="receipt-date">{{ pay.paid_at|date:"d/m/Y à H:i" }}</div>
-    {% if barcode_url %}<div class="barcode"><img src="{{ barcode_url }}" alt="barcode"></div>{% endif %}
-  </div>
-</div>
-
-<!-- Patient + Clinique -->
-<div class="body-grid">
-  <div class="info-block">
-    <div class="info-title">Payé par</div>
-    <div class="info-name">{{ pay.patient.last_name }} {{ pay.patient.first_name }}</div>
-    <div class="info-detail">📞 {{ pay.patient.phone }}<br>Payeur : <b>{{ pay.get_payer_type_display }}</b></div>
-  </div>
-  <div class="info-block">
-    <div class="info-title">Payé à</div>
-    <div class="info-name">Clinique Cerine Alaa-Med</div>
-    <div class="info-detail">Mode : <b>Cash</b><br>Caissier : <b>{{ pay.created_by.username }}</b></div>
+  <div class="date-block">
+    <div class="city-date">Chlef, le {{ pay.paid_at|date:"d/m/Y" }}</div>
+    <div class="patient-info">
+      <div class="patient-name">{{ pay.patient.last_name }} {{ pay.patient.first_name }}</div>
+      Tél : {{ pay.patient.phone }}<br>
+      Régime : <b>{{ pay.get_payer_type_display }}</b>
+      {% if pay.doctor %}<br>Médecin : {{ pay.doctor.full_name }}{% endif %}
+    </div>
   </div>
 </div>
 
-{% if acc_detail %}
-<!-- ══ DÉTAIL FRAIS ACCOUCHEMENT ══ -->
-<div class="acc-block">
-  <div class="acc-header">
-    <span>
-      {% if acc_detail.type_acte == "CES" %}⚕️ Césarienne{% else %}🌿 Accouchement naturel{% endif %}
-      — Détail des frais
-    </span>
-    {% if pay.doctor %}<span style="font-size:10px;opacity:.8">Dr. {{ pay.doctor.full_name }}</span>{% endif %}
-  </div>
-  <table class="acc-table">
-    {% if acc_detail.salle %}
-    <tr><td>Salle d'accouchement / Bloc opératoire</td><td>{{ acc_detail.salle }} DA</td></tr>
-    {% endif %}
-    {% if acc_detail.nb_nuits %}
-    <tr><td>Séjour — {{ acc_detail.nb_nuits }} nuit{{ acc_detail.nb_nuits|pluralize }}</td>
-        <td>{% widthratio acc_detail.nb_nuits 1 acc_detail.tarif_nuit %} DA</td></tr>
-    <tr class="sub"><td colspan="2">{{ acc_detail.nb_nuits }} nuit{{ acc_detail.nb_nuits|pluralize }} × {{ acc_detail.tarif_nuit }} DA / nuit</td></tr>
-    {% endif %}
-    {% if acc_detail.anesthesie %}
-    <tr><td>Frais d'anesthésie</td><td>{{ acc_detail.anesthesie }} DA</td></tr>
-    {% endif %}
-    {% if acc_detail.sage_femme %}
-    <tr><td>Honoraires sage-femme</td><td>{{ acc_detail.sage_femme }} DA</td></tr>
-    {% endif %}
-    {% if acc_detail.medicaments %}
-    <tr><td>Médicaments &amp; consommables</td><td>{{ acc_detail.medicaments }} DA</td></tr>
-    {% endif %}
-    {% if acc_detail.frais_admin %}
-    <tr><td>Frais administratifs (dossier)</td><td>{{ acc_detail.frais_admin }} DA</td></tr>
-    {% endif %}
-    {% if acc_detail.certificat_naissance %}
-    <tr><td>Certificat de naissance</td><td>{{ acc_detail.certificat_naissance }} DA</td></tr>
-    {% endif %}
-    {% if acc_detail.frais_chifa %}
-    <tr><td>Frais dossier Chifa / Militaire</td><td>{{ acc_detail.frais_chifa }} DA</td></tr>
-    {% endif %}
-    <tr class="total-row">
-      <td>TOTAL FRAIS</td>
-      <td>{{ pay.amount_total }} DA</td>
-    </tr>
-  </table>
-  {% if acc_detail.notes %}
-  <div style="padding:6px 10px;font-size:11px;color:#5a6e90;border-top:1px solid #e2e8f0;font-style:italic">
-    {{ acc_detail.notes }}
-  </div>
+<!-- ══ RÉFÉRENCE DU REÇU ══════════════════════════════════════════════════ -->
+<div class="receipt-ref">
+  REÇU N° <span>{{ pay.receipt_no }}</span>
+  &nbsp;&mdash;&nbsp;
+  {{ pay.get_service_type_display|upper }}
+  {% if barcode_url %}
+    <img src="{{ barcode_url }}" alt="" style="height:22px;vertical-align:middle;margin-left:8px">
   {% endif %}
 </div>
 
-{% else %}
-<!-- ══ SERVICE STANDARD ══ -->
-<div class="service-block">
-  <div class="service-header">Détail de la prestation</div>
-  <div class="service-body">
-    <div class="service-name">{{ pay.get_service_type_display }}</div>
-    <div class="service-detail">
-      {% if pay.doctor %}Médecin : <b>{{ pay.doctor.full_name }}</b><br>{% endif %}
-      {% if pay.third_party_note %}Tiers payant : <b>{{ pay.third_party_note }}</b>{% endif %}
-    </div>
-    {% if items %}
-    <ul style="margin:6px 0 0;padding-left:14px">
-      {% for it in items %}
-      <li style="font-size:11px">{{ it.lab_test.name|default:it.label }} — <b>{{ it.amount }} DA</b></li>
-      {% endfor %}
-    </ul>
+<!-- ══ TABLEAU DES PRESTATIONS ══════════════════════════════════════════ -->
+<table class="inv-table">
+  <thead>
+    <tr>
+      <th>Désignation</th>
+      <th style="width:50px;text-align:center">Qté</th>
+      <th style="width:90px;text-align:right">P.U. (DA)</th>
+      <th style="width:90px;text-align:right">Total (DA)</th>
+    </tr>
+  </thead>
+  <tbody>
+
+  {% if acc_detail %}
+    {% if acc_detail.salle %}
+    <tr>
+      <td>Salle d'accouchement / Bloc opératoire</td>
+      <td class="center">1</td>
+      <td class="amount">{{ acc_detail.salle }}</td>
+      <td class="amount">{{ acc_detail.salle }}</td>
+    </tr>
     {% endif %}
-  </div>
-</div>
+
+    {% if acc_detail.nb_nuits %}
+    <tr>
+      <td>Séjour hospitalier</td>
+      <td class="center">{{ acc_detail.nb_nuits }}</td>
+      <td class="amount">{{ acc_detail.tarif_nuit }}</td>
+      <td class="amount">{% widthratio acc_detail.nb_nuits 1 acc_detail.tarif_nuit %}</td>
+    </tr>
+    <tr class="sub-row">
+      <td colspan="4">{{ acc_detail.nb_nuits }} nuit{% if acc_detail.nb_nuits > 1 %}s{% endif %} × {{ acc_detail.tarif_nuit }} DA / nuit</td>
+    </tr>
+    {% endif %}
+
+    {% if acc_detail.anesthesie %}
+    <tr>
+      <td>Frais d'anesthésie</td>
+      <td class="center">1</td>
+      <td class="amount">{{ acc_detail.anesthesie }}</td>
+      <td class="amount">{{ acc_detail.anesthesie }}</td>
+    </tr>
+    {% endif %}
+
+    {% if acc_detail.sage_femme %}
+    <tr>
+      <td>Honoraires sage-femme</td>
+      <td class="center">1</td>
+      <td class="amount">{{ acc_detail.sage_femme }}</td>
+      <td class="amount">{{ acc_detail.sage_femme }}</td>
+    </tr>
+    {% endif %}
+
+    {% if acc_detail.medicaments %}
+    <tr>
+      <td>Médicaments &amp; consommables</td>
+      <td class="center">1</td>
+      <td class="amount">{{ acc_detail.medicaments }}</td>
+      <td class="amount">{{ acc_detail.medicaments }}</td>
+    </tr>
+    {% endif %}
+
+    {% if acc_detail.frais_admin %}
+    <tr>
+      <td>Frais administratifs (dossier)</td>
+      <td class="center">1</td>
+      <td class="amount">{{ acc_detail.frais_admin }}</td>
+      <td class="amount">{{ acc_detail.frais_admin }}</td>
+    </tr>
+    {% endif %}
+
+    {% if acc_detail.certificat_naissance %}
+    <tr>
+      <td>Certificat de naissance</td>
+      <td class="center">1</td>
+      <td class="amount">{{ acc_detail.certificat_naissance }}</td>
+      <td class="amount">{{ acc_detail.certificat_naissance }}</td>
+    </tr>
+    {% endif %}
+
+    {% if acc_detail.frais_chifa %}
+    <tr>
+      <td>Frais dossier Chifa / Militaire</td>
+      <td class="center">1</td>
+      <td class="amount">{{ acc_detail.frais_chifa }}</td>
+      <td class="amount">{{ acc_detail.frais_chifa }}</td>
+    </tr>
+    {% endif %}
+
+  {% else %}
+    <!-- Service standard ou analyses -->
+    <tr>
+      <td>
+        <b>{{ pay.get_service_type_display }}</b>
+        {% if pay.doctor %}<br><span style="font-size:10px;color:#555">Dr. {{ pay.doctor.full_name }}</span>{% endif %}
+        {% if pay.third_party_note %}<br><span style="font-size:10px;color:#555">Tiers payant : {{ pay.third_party_note }}</span>{% endif %}
+      </td>
+      <td class="center">1</td>
+      <td class="amount">{{ pay.amount_total }}</td>
+      <td class="amount">{{ pay.amount_total }}</td>
+    </tr>
+    {% for it in items %}
+    <tr>
+      <td style="padding-left:18px">— {{ it.lab_test.name|default:it.label }}</td>
+      <td class="center">1</td>
+      <td class="amount">{{ it.amount }}</td>
+      <td class="amount">{{ it.amount }}</td>
+    </tr>
+    {% endfor %}
+  {% endif %}
+
+  </tbody>
+  <tfoot>
+    <!-- Part patient / tiers -->
+    {% if pay.payer_type != "NORMAL" %}
+    <tr class="tiers">
+      <td colspan="3">Part patient (payée ce jour)</td>
+      <td>{{ pay.amount_patient }}</td>
+    </tr>
+    <tr class="tiers">
+      <td colspan="3">Part tiers payant ({{ pay.get_payer_type_display }}{% if pay.third_party_note %} — {{ pay.third_party_note }}{% endif %})</td>
+      <td>{{ pay.amount_third_party }}</td>
+    </tr>
+    {% endif %}
+    <!-- Total -->
+    <tr class="grand-total">
+      <td colspan="3">MONTANT TOTAL</td>
+      <td>{{ pay.amount_total }}</td>
+    </tr>
+  </tfoot>
+</table>
+
+{% if acc_detail.notes %}
+<div class="notes-row">Observations : {{ acc_detail.notes }}</div>
 {% endif %}
 
-<!-- Montants -->
-<div class="amounts-block">
-  <div class="amounts-row">
-    <span class="amounts-label">Part patient</span>
-    <span class="amounts-val">{{ pay.amount_patient }} DA</span>
+<!-- ══ BAS DE PAGE : LETTRES + TAMPON ═════════════════════════════════════ -->
+<div class="bottom-area">
+  <div class="lettres-block">
+    <div class="lettres-label">Arrêtée la présente quittance à la somme de :</div>
+    <div class="lettres-text">{{ montant_lettres }}</div>
+    <div style="margin-top:10px;font-size:9px;color:#555">
+      Établi par : <b>{{ pay.created_by.username }}</b> — le {{ pay.paid_at|date:"d/m/Y à H:i" }}
+    </div>
   </div>
-  <div class="amounts-row">
-    <span class="amounts-label">Part tiers payant</span>
-    <span class="amounts-val">{{ pay.amount_third_party }} DA</span>
-  </div>
-  <div class="amounts-row total">
-    <span class="amounts-label">TOTAL</span>
-    <span class="amounts-val">{{ pay.amount_total }} DA</span>
+  <div class="stamp-block">
+    <div class="stamp-label">Signature &amp; cachet</div>
+    <div class="stamp-box">Cachet<br>clinique</div>
   </div>
 </div>
 
-<!-- Montant en lettres -->
-<div class="lettres-block">
-  <div class="lettres-label">Montant en toutes lettres</div>
-  {{ montant_lettres }}
-</div>
-
-<!-- Pied de page -->
-<div class="footer">
-  <div>
-    <div class="footer-label">Lieu et date</div>
-    <div class="footer-val">Chlef, le {{ pay.paid_at|date:"d/m/Y" }}</div>
-  </div>
-  <div style="text-align:right">
-    <div class="footer-label">Signature &amp; cachet</div>
-    <div class="stamp">VALIDÉ</div>
-  </div>
+<!-- ══ PIED DE PAGE ═══════════════════════════════════════════════════════ -->
+<div class="page-footer">
+  <span>Clinique Cerine Alaa-Med — EHP — Chorfa (Bradaï), Chlef</span>
+  <span>Reçu N° {{ pay.receipt_no }}</span>
 </div>
 
 </body>
