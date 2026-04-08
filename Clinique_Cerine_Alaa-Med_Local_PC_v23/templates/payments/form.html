@@ -69,8 +69,10 @@
 
         <div class="cf-field">
           <label class="cf-label">RDV lié <span class="opt">(optionnel)</span></label>
+          <input type="text" id="rdvSearch" class="cf-input" placeholder="🔍 Rechercher par nom ou date..."
+            style="margin-bottom:6px" oninput="filterRdv(this.value)">
           <div class="cf-select-wrap">
-            <select class="cf-select" name="appointment">
+            <select class="cf-select" name="appointment" id="rdvSelect">
               <option value="">— Aucun RDV —</option>
               {% for rdv in form.appointment.field.queryset %}
               <option value="{{ rdv.id }}">{{ rdv.start_at|date:"d/m/Y H:i" }} — {{ rdv.patient }}</option>
@@ -78,6 +80,15 @@
             </select>
           </div>
         </div>
+        <script>
+        function filterRdv(q) {
+          const sel = document.getElementById('rdvSelect');
+          const lower = q.toLowerCase();
+          Array.from(sel.options).forEach(opt => {
+            opt.style.display = (!lower || opt.value === '' || opt.text.toLowerCase().includes(lower)) ? '' : 'none';
+          });
+        }
+        </script>
 
         <div class="cf-field" id="tierNoteRow" style="display:none">
           <label class="cf-label">Note tiers payant</label>
