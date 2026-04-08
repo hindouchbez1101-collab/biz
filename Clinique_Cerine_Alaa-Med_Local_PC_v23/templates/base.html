@@ -190,21 +190,3 @@ function calcTotal() {
 </script>
 </body>
 </html>
-function removeRow(btn) {
-  const row = btn.closest('.row');
-  if (row) row.remove();
-  calcTotal();
-}
-function calcTotal() {
-  const inputs = document.querySelectorAll('input[name="item_amount[]"]');
-  let total = 0;
-  inputs.forEach(i => {
-    const n = parseFloat((i.value || '0').replace(',', '.'));
-    if (!isNaN(n)) total += n;
-  });
-  const out = document.getElementById('calcTotalOut');
-  if (out) out.textContent = total.toFixed(2);
-}
-</script>
-</body>
-</html>
