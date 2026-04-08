@@ -345,3 +345,118 @@ a:hover { text-decoration: underline; }
 
 /* Theme toggle */
 .theme-chip { font-size: 12px; color: var(--muted); padding: 8px 12px; border: 1px solid var(--line); border-radius: 100px; cursor: pointer; background: transparent; font-family: var(--font); }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE MOBILE — breakpoints 768px / 1024px
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Hamburger button (visible seulement sur mobile) ─────────── */
+.menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  cursor: pointer;
+  font-size: 20px;
+  flex-shrink: 0;
+  color: var(--text);
+}
+
+/* ── Overlay fond (ferme la sidebar sur mobile) ───────────────── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(3px);
+  z-index: 30;
+}
+.sidebar-overlay.open { display: block; }
+
+/* ── Tablet (≤ 1024px) ────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .sidebar { width: 240px; }
+  .grid-3  { grid-template-columns: repeat(2,1fr); }
+  .content { padding: 18px; gap: 14px; }
+  .topbar  { padding: 12px 18px; }
+}
+
+/* ── Mobile (≤ 768px) ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* Layout de base */
+  .app { flex-direction: column; }
+
+  /* Sidebar : cachée par défaut, slide depuis la gauche */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+    box-shadow: 4px 0 32px rgba(0,0,0,.4);
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  /* Bouton hamburger visible */
+  .menu-btn { display: flex; }
+
+  /* Main prend toute la largeur */
+  .main { width: 100%; min-height: 100vh; }
+
+  /* Topbar */
+  .topbar { padding: 10px 14px; gap: 8px; flex-wrap: nowrap; }
+  .topbar-title { font-size: 16px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-actions { gap: 6px; flex-shrink: 0; }
+  .topbar-actions .btn { padding: 7px 10px; font-size: 12px; }
+
+  /* Content */
+  .content { padding: 12px; gap: 12px; }
+
+  /* Grilles → 1 colonne */
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+
+  /* Cards */
+  .card { padding: 14px 14px; border-radius: 16px; }
+  .card-kpi { font-size: 26px; }
+
+  /* Tables → scroll horizontal */
+  .card:has(.table), .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table { min-width: 560px; }
+  .table th, .table td { padding: 9px 10px; font-size: 12px; }
+
+  /* Boutons */
+  .btn { padding: 8px 14px; font-size: 13px; }
+  .btn.small, .btn.sm { padding: 7px 10px; font-size: 11px; }
+
+  /* Header stock */
+  .header-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+
+  /* Items payment */
+  .item     { grid-template-columns: 1fr 1fr; }
+  .itemhead { display: none; }
+
+  /* KPI cards */
+  .kpi-card { padding: 14px 16px; }
+  .kpi-value { font-size: 22px; }
+}
+
+/* ── Très petit mobile (≤ 400px) ─────────────────────────────── */
+@media (max-width: 400px) {
+  .topbar-actions .btn:not(.theme-chip) { display: none; }
+  .topbar-actions .btn.primary { display: inline-flex; }
+  .content { padding: 8px; gap: 8px; }
+  .card { padding: 12px 12px; }
+}
