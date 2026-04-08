@@ -205,16 +205,21 @@ const typeSel = document.getElementById('typeDossier');
 const labelNumAss = document.getElementById('labelNumAss');
 const fieldNumAss = document.getElementById('fieldNumAss');
 const numeroInput = document.querySelector('input[name="numero"]');
-const autoNumeros = {{ auto_numeros|default:"{}" }};
+// Sérialisation correcte en JSON (pas de dict Python)
+const autoNumeros = {
+  "GENERAL":   "{{ auto_numeros.GENERAL|default:''|escapejs }}",
+  "CHIFA":     "{{ auto_numeros.CHIFA|default:''|escapejs }}",
+  "MILITAIRE": "{{ auto_numeros.MILITAIRE|default:''|escapejs }}"
+};
 function updateNumAssLabel() {
   const t = typeSel.value;
-  if (t === 'CHIFA')     { labelNumAss.textContent = 'N° Assurance (Chifa)'; fieldNumAss.style.display = ''; }
-  else if (t === 'MILITAIRE') { labelNumAss.textContent = 'N° Militaire'; fieldNumAss.style.display = ''; }
-  else { fieldNumAss.style.display = 'none'; }
-  // Auto-update dossier number when type changes (only if user hasn't typed manually)
+  if (t === 'CHIFA')          { labelNumAss.textContent = 'N° Assurance (Chifa)'; fieldNumAss.style.display = ''; }
+  else if (t === 'MILITAIRE') { labelNumAss.textContent = 'N° Militaire';          fieldNumAss.style.display = ''; }
+  else                        { fieldNumAss.style.display = 'none'; }
+  // Met à jour le N° dossier si l'utilisateur n'a pas saisi manuellement
   if (numeroInput && autoNumeros[t]) {
-    const vals = Object.values(autoNumeros);
-    if (!numeroInput.value || vals.includes(numeroInput.value)) {
+    const knownNums = Object.values(autoNumeros);
+    if (!numeroInput.value || knownNums.includes(numeroInput.value)) {
       numeroInput.value = autoNumeros[t];
       numeroInput.placeholder = autoNumeros[t];
     }
