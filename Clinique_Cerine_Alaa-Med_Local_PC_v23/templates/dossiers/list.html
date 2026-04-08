@@ -1,60 +1,106 @@
 {% extends "base.html" %}
 {% block title %}Dossiers Maternité{% endblock %}
 {% block actions %}
-  <a class="btn" href="/patients/">Choisir une patiente</a>
+  <a class="btn" href="/patients/">+ Nouveau dossier</a>
 {% endblock %}
 {% block content %}
 <link rel="stylesheet" href="/static/dossiers.css">
-<div class="dm-wrap">
 
-  <div class="dm-search-bar">
-    <form method="get" style="display:flex;gap:10px;flex:1;flex-wrap:wrap;align-items:center">
-      <input class="dm-search-input" name="q" value="{{ q }}" placeholder="🔍  Rechercher par N°, nom, téléphone…">
-      <select class="dm-select" name="type">
-        <option value="">Tous les types</option>
-        <option value="GENERAL"   {% if request.GET.type == "GENERAL" %}selected{% endif %}>Général</option>
-        <option value="CHIFA"     {% if request.GET.type == "CHIFA" %}selected{% endif %}>Chifa ACC</option>
-        <option value="MILITAIRE" {% if request.GET.type == "MILITAIRE" %}selected{% endif %}>Militaire</option>
-      </select>
-      <button class="dm-btn primary" type="submit">Filtrer</button>
-      {% if q or request.GET.type %}<a class="dm-btn ghost" href="/dossiers/">Effacer</a>{% endif %}
-    </form>
-    <div style="font-size:13px;color:var(--muted);white-space:nowrap">{{ dossiers|length }} dossier(s)</div>
+<!-- KPIs -->
+<div class="grid-3">
+  <div class="card kpi-accent-blue">
+    <div class="card-label">Total dossiers</div>
+    <div class="card-kpi">{{ dossiers|length }}</div>
   </div>
-
-  <div class="dm-grid">
-    {% for d in dossiers %}
-    <a class="dm-card type-{{ d.type_dossier }}" href="/dossiers/{{ d.id }}/">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <span class="dm-badge type-{{ d.type_dossier }}">
-          {% if d.type_dossier == "CHIFA" %}🟢 Chifa ACC
-          {% elif d.type_dossier == "MILITAIRE" %}🔵 Militaire
-          {% else %}🟣 Général{% endif %}
-        </span>
-        <span style="font-size:11px;color:var(--muted)">{{ d.created_at|date:"d/m/Y" }}</span>
-      </div>
-      <div class="dm-card-num">N° {{ d.numero }}</div>
-      <div class="dm-card-name">{{ d.nom }} {{ d.prenom }}</div>
-      <div class="dm-card-meta">
-        {% if d.medecin %}<div class="dm-card-meta-item">👨‍⚕️ <b>{{ d.medecin }}</b></div>{% endif %}
-        {% if d.date_entree %}<div class="dm-card-meta-item">📅 Entrée <b>{{ d.date_entree|date:"d/m/Y" }}</b></div>{% endif %}
-        {% if d.date_sortie %}<div class="dm-card-meta-item">🏁 Sortie <b>{{ d.date_sortie|date:"d/m/Y" }}</b></div>{% endif %}
-        {% if d.num_ass %}<div class="dm-card-meta-item">🪪 <b>{{ d.num_ass }}</b></div>{% endif %}
-      </div>
-      <div class="dm-card-footer">
-        <span style="font-size:12px;color:var(--muted)">{{ d.patient }}</span>
-        <span class="dm-btn sm">Voir →</span>
-      </div>
-    </a>
-    {% empty %}
-    <div class="dm-empty">
-      <div class="dm-empty-icon">🗂️</div>
-      <div class="dm-empty-text">Aucun dossier trouvé.<br>
-        <a href="/patients/" style="color:var(--dm-teal2)">Sélectionnez une patiente</a> pour créer son dossier.
-      </div>
-    </div>
-    {% endfor %}
+  <div class="card kpi-accent-green">
+    <div class="card-label">Chifa ACC</div>
+    <div class="card-kpi">{{ stats.chifa }}</div>
   </div>
-
+  <div class="card kpi-accent-amber">
+    <div class="card-label">Militaire</div>
+    <div class="card-kpi">{{ stats.militaire }}</div>
+  </div>
 </div>
+
+<!-- Filtres -->
+<div class="card" style="padding:14px 18px">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <input class="input" name="q" value="{{ q }}" placeholder="🔍  N°, nom, prénom, téléphone…"
+      style="max-width:280px;border-radius:100px">
+    <select class="input" name="type" style="width:170px;border-radius:100px">
+      <option value="">Tous les types</option>
+      <option value="GENERAL"   {% if request.GET.type == "GENERAL" %}selected{% endif %}>🟣 Général</option>
+      <option value="CHIFA"     {% if request.GET.type == "CHIFA" %}selected{% endif %}>🟢 Chifa ACC</option>
+      <option value="MILITAIRE" {% if request.GET.type == "MILITAIRE" %}selected{% endif %}>🔵 Militaire</option>
+    </select>
+    <button class="btn primary" type="submit">Filtrer</button>
+    {% if q or request.GET.type %}<a class="btn" href="/dossiers/">✕ Effacer</a>{% endif %}
+    <span class="muted" style="font-size:12px;margin-left:auto">{{ dossiers|length }} dossier(s)</span>
+  </form>
+</div>
+
+<!-- Liste -->
+<div class="card" style="overflow-x:auto">
+  <table class="table sortable" id="tblDossiers">
+    <thead>
+      <tr>
+        <th data-sort="text">N° Dossier</th>
+        <th data-sort="text">Type</th>
+        <th data-sort="text">Nom</th>
+        <th data-sort="text">Prénom</th>
+        <th data-sort="text">Médecin</th>
+        <th data-sort="date">Date entrée</th>
+        <th data-sort="date">Date sortie</th>
+        <th data-sort="date">Créé le</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in dossiers %}
+      <tr>
+        <td>
+          <a href="/dossiers/{{ d.id }}/" style="font-weight:700;font-family:monospace">{{ d.numero }}</a>
+        </td>
+        <td>
+          {% if d.type_dossier == "CHIFA" %}
+            <span class="badge green">🟢 Chifa</span>
+          {% elif d.type_dossier == "MILITAIRE" %}
+            <span class="badge blue">🔵 Militaire</span>
+          {% else %}
+            <span class="badge" style="background:color-mix(in srgb,#a855f7 12%,transparent);color:#a855f7">🟣 Général</span>
+          {% endif %}
+        </td>
+        <td style="font-weight:600">{{ d.nom }}</td>
+        <td>{{ d.prenom }}</td>
+        <td class="muted" style="font-size:12px">{{ d.medecin|default:"—" }}</td>
+        <td class="muted" style="font-size:12px" data-val="{{ d.date_entree|date:'Y-m-d'|default:'' }}">
+          {{ d.date_entree|date:"d/m/Y"|default:"—" }}
+        </td>
+        <td class="muted" style="font-size:12px" data-val="{{ d.date_sortie|date:'Y-m-d'|default:'' }}">
+          {% if d.date_sortie %}
+            <span class="badge green" style="font-size:10px">✓ {{ d.date_sortie|date:"d/m/Y" }}</span>
+          {% else %}
+            <span class="badge amber" style="font-size:10px">En cours</span>
+          {% endif %}
+        </td>
+        <td class="muted" style="font-size:12px" data-val="{{ d.created_at|date:'Y-m-d' }}">
+          {{ d.created_at|date:"d/m/Y" }}
+        </td>
+        <td style="white-space:nowrap">
+          <a class="btn small" href="/dossiers/{{ d.id }}/">Voir →</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="muted" style="text-align:center;padding:40px">
+          <div style="font-size:32px;margin-bottom:10px;opacity:.4">🗂️</div>
+          {% if q %}Aucun dossier pour « {{ q }} ».{% else %}Aucun dossier enregistré.{% endif %}<br>
+          <a href="/patients/" style="color:var(--accent)">Sélectionner une patiente →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 {% endblock %}

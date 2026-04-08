@@ -46,17 +46,17 @@
 
 <!-- Tableau -->
 <div class="card">
-  <table class="table">
+  <table class="table sortable">
     <thead>
-      <tr><th>Employé</th><th>Rôle</th><th style="text-align:right">Montant</th><th>Payé le</th><th>Note</th><th></th></tr>
+      <tr><th data-sort="text">Employé</th><th data-sort="text">Rôle</th><th data-sort="num" style="text-align:right">Montant</th><th data-sort="date">Payé le</th><th>Note</th><th></th></tr>
     </thead>
     <tbody>
       {% for s in salaries %}
       <tr>
         <td><b>{{ s.employee.full_name }}</b></td>
         <td class="muted" style="font-size:12px">{{ s.employee.role|default:"—" }}</td>
-        <td style="text-align:right"><b style="color:#f87171">−{{ s.amount }} DA</b></td>
-        <td>
+        <td style="text-align:right" data-val="{{ s.amount }}"><b style="color:#f87171">−{{ s.amount }} DA</b></td>
+        <td data-val="{{ s.paid_at|date:'Y-m-d'|default:'0000-00-00' }}">
           {% if s.paid_at %}
             <span class="badge green">{{ s.paid_at|date:"d/m/Y" }}</span>
           {% else %}

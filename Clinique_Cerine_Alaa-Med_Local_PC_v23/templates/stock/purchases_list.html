@@ -19,14 +19,14 @@
 </div>
 
 <div class="card">
-  <table class="table">
+  <table class="table sortable">
     <thead>
-      <tr><th>Date</th><th>Fournisseur</th><th>Réf. facture</th><th>Statut</th><th style="text-align:right">Total</th><th>Créé par</th><th>Validé par</th><th>Actions</th></tr>
+      <tr><th data-sort="date">Date</th><th data-sort="text">Fournisseur</th><th data-sort="text">Réf. facture</th><th data-sort="text">Statut</th><th data-sort="num" style="text-align:right">Total</th><th data-sort="text">Créé par</th><th data-sort="text">Validé par</th><th>Actions</th></tr>
     </thead>
     <tbody>
       {% for p in purchases %}
       <tr>
-        <td style="white-space:nowrap">{{ p.purchased_at|date:"d/m/Y" }}</td>
+        <td style="white-space:nowrap" data-val="{{ p.purchased_at|date:'Y-m-d' }}">{{ p.purchased_at|date:"d/m/Y" }}</td>
         <td><b>{{ p.supplier.name }}</b></td>
         <td class="muted" style="font-size:12px">{{ p.invoice_no|default:"—" }}</td>
         <td>

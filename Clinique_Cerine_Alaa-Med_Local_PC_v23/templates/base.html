@@ -122,6 +122,48 @@ function closeSidebar() {
 // Fermer avec Escape
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
 
+// ── Tri de tableau universel ────────────────────────────────────
+(function () {
+  function getCellVal(row, idx) {
+    const td = row.querySelectorAll('td')[idx];
+    if (!td) return '';
+    // Prefer data-val attribute (pre-formatted dates)
+    return (td.dataset.val || td.innerText || td.textContent || '').trim();
+  }
+  function comparer(idx, asc, type) {
+    return function (a, b) {
+      const va = getCellVal(a, idx);
+      const vb = getCellVal(b, idx);
+      if (type === 'num') {
+        return (parseFloat(va.replace(/[^\d.,-]/g,'').replace(',','.')) || 0) -
+               (parseFloat(vb.replace(/[^\d.,-]/g,'').replace(',','.')) || 0);
+      }
+      if (type === 'date') {
+        // ISO dates (YYYY-MM-DD) sort lexicographically
+        return va < vb ? -1 : va > vb ? 1 : 0;
+      }
+      return va.localeCompare(vb, 'fr', { sensitivity: 'base' });
+    };
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('table.sortable').forEach(function (tbl) {
+      tbl.querySelectorAll('thead th[data-sort]').forEach(function (th, colIdx) {
+        th.addEventListener('click', function () {
+          const asc = !th.classList.contains('asc');
+          // Reset all headers
+          tbl.querySelectorAll('thead th').forEach(h => h.classList.remove('asc','desc'));
+          th.classList.add(asc ? 'asc' : 'desc');
+          const tbody = tbl.querySelector('tbody');
+          const rows = Array.from(tbody.querySelectorAll('tr')).filter(r => r.querySelectorAll('td').length > 1);
+          rows.sort(comparer(colIdx, asc, th.dataset.sort || 'text'));
+          if (!asc) rows.reverse();
+          rows.forEach(r => tbody.appendChild(r));
+        });
+      });
+    });
+  });
+})();
+
 // ── Payment items ───────────────────────────────────────────────
 function addRow() {
   const tmpl = document.getElementById('itemRowTemplate');
@@ -130,6 +172,24 @@ function addRow() {
   const node = tmpl.content.cloneNode(true);
   container.appendChild(node);
 }
+function removeRow(btn) {
+  const row = btn.closest('.row');
+  if (row) row.remove();
+  calcTotal();
+}
+function calcTotal() {
+  const inputs = document.querySelectorAll('input[name="item_amount[]"]');
+  let total = 0;
+  inputs.forEach(i => {
+    const n = parseFloat((i.value || '0').replace(',', '.'));
+    if (!isNaN(n)) total += n;
+  });
+  const out = document.getElementById('calcTotalOut');
+  if (out) out.textContent = total.toFixed(2);
+}
+</script>
+</body>
+</html>
 function removeRow(btn) {
   const row = btn.closest('.row');
   if (row) row.remove();

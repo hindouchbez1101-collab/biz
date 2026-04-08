@@ -83,22 +83,22 @@
 <div class="card">
   <div class="cf-section-title" style="margin-bottom:16px">Détail des accouchements</div>
   {% if accouchements %}
-  <table class="table">
+  <table class="table sortable">
     <thead>
       <tr>
-        <th>Date</th>
-        <th>Patiente</th>
-        <th>Acte</th>
-        <th>Dossier</th>
-        <th style="text-align:right">Honoraires (DA)</th>
-        <th style="text-align:center">Statut</th>
+        <th data-sort="date">Date</th>
+        <th data-sort="text">Patiente</th>
+        <th data-sort="text">Acte</th>
+        <th data-sort="text">Dossier</th>
+        <th data-sort="num" style="text-align:right">Honoraires (DA)</th>
+        <th data-sort="text" style="text-align:center">Statut</th>
         <th style="text-align:center">Actions</th>
       </tr>
     </thead>
     <tbody>
       {% for acc in accouchements %}
       <tr>
-        <td style="white-space:nowrap">{{ acc.payment.paid_at|date:"d/m/Y" }}</td>
+        <td style="white-space:nowrap" data-val="{{ acc.payment.paid_at|date:'Y-m-d' }}">{{ acc.payment.paid_at|date:"d/m/Y" }}</td>
         <td>
           <a href="{% url 'patient_detail' acc.payment.patient.pk %}">{{ acc.payment.patient.last_name }} {{ acc.payment.patient.first_name }}</a>
           <br><span class="muted" style="font-size:.8rem">Reçu {{ acc.payment.receipt_no }}</span>
@@ -119,7 +119,7 @@
             <span class="muted">Général</span>
           {% endif %}
         </td>
-        <td style="text-align:right">
+        <td style="text-align:right" data-val="{{ acc.honoraires_medecin }}">
           <!-- Édition inline du montant -->
           <form method="post" action="{% url 'honoraires_edit_montant' acc.pk %}"
             style="display:flex;align-items:center;justify-content:flex-end;gap:6px">

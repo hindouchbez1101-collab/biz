@@ -1283,7 +1283,7 @@ from .forms  import DossierMaterniteForm, ExamenMaterniteForm
 def dossier_list(request):
     q = (request.GET.get("q") or "").strip()
     t = (request.GET.get("type") or "").strip()
-    qs = DossierMaternite.objects.select_related("patient")
+    qs = DossierMaternite.objects.select_related("patient").order_by("-created_at")
     if q:
         qs = (
             qs.filter(numero__icontains=q)
@@ -1293,7 +1293,13 @@ def dossier_list(request):
         )
     if t:
         qs = qs.filter(type_dossier=t)
-    return render(request, "dossiers/list.html", {"dossiers": qs[:200], "q": q})
+    all_qs = DossierMaternite.objects.all()
+    stats = {
+        "chifa":     all_qs.filter(type_dossier="CHIFA").count(),
+        "militaire": all_qs.filter(type_dossier="MILITAIRE").count(),
+        "general":   all_qs.filter(type_dossier="GENERAL").count(),
+    }
+    return render(request, "dossiers/list.html", {"dossiers": qs[:300], "q": q, "stats": stats})
 
 
 @login_required

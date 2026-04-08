@@ -39,14 +39,14 @@
 
 <!-- Tableau -->
 <div class="card">
-  <table class="table">
+  <table class="table sortable">
     <thead>
-      <tr><th>Date</th><th>Catégorie</th><th style="text-align:right">Montant</th><th>Note</th><th>Créé par</th><th></th></tr>
+      <tr><th data-sort="date">Date</th><th data-sort="text">Catégorie</th><th data-sort="num" style="text-align:right">Montant</th><th data-sort="text">Note</th><th data-sort="text">Créé par</th><th></th></tr>
     </thead>
     <tbody>
       {% for e in expenses %}
       <tr>
-        <td style="white-space:nowrap">{{ e.spent_at|date:"d/m/Y" }}</td>
+        <td style="white-space:nowrap" data-val="{{ e.spent_at|date:'Y-m-d' }}">{{ e.spent_at|date:"d/m/Y" }}</td>
         <td><span class="badge muted">{{ e.get_category_display }}</span></td>
         <td style="text-align:right"><b style="color:#f87171">−{{ e.amount }} DA</b></td>
         <td class="muted" style="font-size:12px">{{ e.note|default:"—" }}</td>
