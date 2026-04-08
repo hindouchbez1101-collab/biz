@@ -63,18 +63,18 @@
 
 <!-- Liste RDV -->
 <div class="card">
-  <table class="table">
+  <table class="table sortable">
     <thead>
       <tr>
-        {% if search_mode %}<th>Date</th>{% endif %}
-        <th>Heure</th><th>Patient</th><th>Type de soin</th><th>Médecin</th><th>Note</th><th>Statut</th><th>Actions</th>
+        {% if search_mode %}<th data-sort="date">Date</th>{% endif %}
+        <th data-sort="date">Heure</th><th data-sort="text">Patient</th><th data-sort="text">Type de soin</th><th data-sort="text">Médecin</th><th>Note</th><th data-sort="text">Statut</th><th>Actions</th>
       </tr>
     </thead>
     <tbody>
       {% for r in appointments %}
       <tr>
-        {% if search_mode %}<td class="muted" style="font-size:12px;white-space:nowrap">{{ r.start_at|date:"d/m/Y" }}</td>{% endif %}
-        <td><b style="font-size:15px">{{ r.start_at|date:"H:i" }}</b></td>
+        {% if search_mode %}<td class="muted" style="font-size:12px;white-space:nowrap" data-val="{{ r.start_at|date:'Y-m-d' }}">{{ r.start_at|date:"d/m/Y" }}</td>{% endif %}
+        <td data-val="{{ r.start_at|date:'Y-m-d H:i' }}"><b style="font-size:15px">{{ r.start_at|date:"H:i" }}</b></td>
         <td>
           <a href="/patients/{{ r.patient.id }}/" style="font-weight:600">{{ r.patient.last_name }} {{ r.patient.first_name }}</a>
           <div class="muted" style="font-size:11px">📞 {{ r.patient.phone }}</div>

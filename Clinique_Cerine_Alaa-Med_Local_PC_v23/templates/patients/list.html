@@ -28,14 +28,14 @@
     <span class="muted" style="font-size:12px;margin-left:auto">{{ patients|length }} résultat(s)</span>
   </form>
 
-  <table class="table">
+  <table class="table sortable">
     <thead>
       <tr>
-        <th>#</th>
-        <th>Nom &amp; Prénom</th>
-        <th>Téléphone</th>
-        <th>Date de naissance</th>
-        <th>Inscrit le</th>
+        <th data-sort="num">#</th>
+        <th data-sort="text">Nom &amp; Prénom</th>
+        <th data-sort="text">Téléphone</th>
+        <th data-sort="date">Date de naissance</th>
+        <th data-sort="date">Inscrit le</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -48,8 +48,8 @@
           {% if p.notes %}<div class="muted" style="font-size:11px;margin-top:2px">{{ p.notes|truncatechars:50 }}</div>{% endif %}
         </td>
         <td>{{ p.phone }}</td>
-        <td class="muted">{% if p.birth_date %}{{ p.birth_date|date:"d/m/Y" }}{% else %}—{% endif %}</td>
-        <td class="muted">{{ p.created_at|date:"d/m/Y" }}</td>
+        <td class="muted" data-val="{{ p.birth_date|date:'Y-m-d'|default:'' }}">{% if p.birth_date %}{{ p.birth_date|date:"d/m/Y" }}{% else %}—{% endif %}</td>
+        <td class="muted" data-val="{{ p.created_at|date:'Y-m-d' }}">{{ p.created_at|date:"d/m/Y" }}</td>
         <td>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <a class="btn small" href="/patients/{{ p.id }}/">👁 Fiche</a>

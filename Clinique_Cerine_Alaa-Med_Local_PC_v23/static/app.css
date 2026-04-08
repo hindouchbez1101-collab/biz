@@ -460,3 +460,24 @@ a:hover { text-decoration: underline; }
   .content { padding: 8px; gap: 8px; }
   .card { padding: 12px 12px; }
 }
+
+/* ── Sortable table headers ──────────────────────────────────── */
+.table.sortable thead th[data-sort] {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+  padding-right: 22px;
+}
+.table.sortable thead th[data-sort]::after {
+  content: ' ⇅';
+  font-size: 10px;
+  opacity: .35;
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.table.sortable thead th[data-sort].asc::after  { content: ' ↑'; opacity: .9; color: var(--accent); }
+.table.sortable thead th[data-sort].desc::after { content: ' ↓'; opacity: .9; color: var(--accent); }
+.table.sortable thead th[data-sort]:hover { color: var(--accent); }
