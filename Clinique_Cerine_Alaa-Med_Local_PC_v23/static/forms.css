@@ -251,3 +251,14 @@ html[data-theme="light"] .cf-input[type="datetime-local"] {
 .cf-ac-item:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .cf-ac-item .name { font-weight: 600; }
 .cf-ac-item .phone { font-size: 11px; color: var(--muted); }
+
+/* ── Responsive mobile (forms.css) ──────────────────────────── */
+@media (max-width: 768px) {
+  .cf-wrap, .cf-wrap.wide { max-width: 100%; }
+  .cf-card { padding: 16px 14px; border-radius: 16px; }
+  .cf-grid.cols-2, .cf-grid.cols-3 { grid-template-columns: 1fr !important; }
+  .cf-grid .span-2, .cf-grid .span-3 { grid-column: span 1 !important; }
+  .cf-actions { flex-direction: column; gap: 8px; }
+  .cf-actions .cf-btn-submit, .cf-actions .btn { width: 100%; justify-content: center; }
+  .cf-section-title { font-size: 15px; }
+}

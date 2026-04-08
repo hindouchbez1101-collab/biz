@@ -7,8 +7,12 @@
   <link rel="stylesheet" href="/static/app.css"/>
 </head>
 <body>
+
+<!-- Overlay ferme la sidebar sur mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
 <div class="app">
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="logo">🏥</div>
       <div>
@@ -19,36 +23,36 @@
 
     {% if user.is_authenticated %}
     <nav class="nav">
-      <a class="nav-item" href="/">📊 Dashboard</a>
+      <a class="nav-item" href="/" onclick="closeSidebar()">📊 Dashboard</a>
 
       {% if "RECEPTION" in USER_GROUPS or "ADMIN" in USER_GROUPS or "GERANT" in USER_GROUPS %}
       <div class="nav-section">Réception</div>
-      <a class="nav-item" href="/patients/">👤 Patients</a>
-      <a class="nav-item" href="/rdv/">📅 Rendez-vous</a>
-      <a class="nav-item" href="/encaissements/">💰 Encaissements</a>
-      <a class="nav-item" href="/encaissements/caisse/" style="font-weight:700;color:var(--accent2)">🏦 Caisse (auto)</a>
+      <a class="nav-item" href="/patients/" onclick="closeSidebar()">👤 Patients</a>
+      <a class="nav-item" href="/rdv/" onclick="closeSidebar()">📅 Rendez-vous</a>
+      <a class="nav-item" href="/encaissements/" onclick="closeSidebar()">💰 Encaissements</a>
+      <a class="nav-item" href="/encaissements/caisse/" style="font-weight:700;color:var(--accent2)" onclick="closeSidebar()">🏦 Caisse (auto)</a>
       <div class="nav-section">Dossiers Médicaux</div>
-      <a class="nav-item" href="/dossiers/">🗂️ Dossiers Maternité</a>
-      <a class="nav-item" href="/examens/">🔬 Examens</a>
+      <a class="nav-item" href="/dossiers/" onclick="closeSidebar()">🗂️ Dossiers Maternité</a>
+      <a class="nav-item" href="/examens/" onclick="closeSidebar()">🔬 Examens</a>
       <div class="nav-section">Stock</div>
-      <a class="nav-item" href="/stock/achats/">📦 Achats (BR)</a>
-      <a class="nav-item" href="/stock/fournisseurs/">🏭 Fournisseurs</a>
+      <a class="nav-item" href="/stock/achats/" onclick="closeSidebar()">📦 Achats (BR)</a>
+      <a class="nav-item" href="/stock/fournisseurs/" onclick="closeSidebar()">🏭 Fournisseurs</a>
       {% endif %}
 
       {% if "GERANT" in USER_GROUPS or "ADMIN" in USER_GROUPS %}
       <div class="nav-section">Finance & RH</div>
-      <a class="nav-item" href="/finance/caisse/" style="font-weight:700">💵 Solde de caisse</a>
-      <a class="nav-item" href="/depenses/">📤 Dépenses</a>
-      <a class="nav-item" href="/rapports/">📈 Rapports</a>
-      <a class="nav-item" href="/rh/salaires/">💼 Salaires</a>
-      <a class="nav-item" href="/rh/employes/">👥 Employés</a>
-      <a class="nav-item" href="/medecins-ambulants/">👨‍⚕️ Médecins ambulatoires</a>
+      <a class="nav-item" href="/finance/caisse/" style="font-weight:700" onclick="closeSidebar()">💵 Solde de caisse</a>
+      <a class="nav-item" href="/depenses/" onclick="closeSidebar()">📤 Dépenses</a>
+      <a class="nav-item" href="/rapports/" onclick="closeSidebar()">📈 Rapports</a>
+      <a class="nav-item" href="/rh/salaires/" onclick="closeSidebar()">💼 Salaires</a>
+      <a class="nav-item" href="/rh/employes/" onclick="closeSidebar()">👥 Employés</a>
+      <a class="nav-item" href="/medecins-ambulants/" onclick="closeSidebar()">👨‍⚕️ Médecins ambulatoires</a>
       {% endif %}
 
       {% if "ADMIN" in USER_GROUPS %}
       <div class="nav-section">Administration</div>
-      <a class="nav-item" href="/parametres/">⚙️ Paramètres</a>
-      <a class="nav-item" href="/admin/">🔧 Admin Django</a>
+      <a class="nav-item" href="/parametres/" onclick="closeSidebar()">⚙️ Paramètres</a>
+      <a class="nav-item" href="/admin/" onclick="closeSidebar()">🔧 Admin Django</a>
       {% endif %}
     </nav>
 
@@ -67,6 +71,9 @@
 
   <main class="main">
     <header class="topbar">
+      <!-- Hamburger (mobile uniquement) -->
+      <button class="menu-btn" type="button" onclick="openSidebar()" aria-label="Menu">☰</button>
+
       <div class="topbar-title">{% block title %}{% endblock %}</div>
       <div class="topbar-actions">
         {% block actions %}{% endblock %}
@@ -101,6 +108,21 @@
 </div>
 
 <script>
+// ── Sidebar mobile ──────────────────────────────────────────────
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('mobile-open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+// Fermer avec Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+
+// ── Payment items ───────────────────────────────────────────────
 function addRow() {
   const tmpl = document.getElementById('itemRowTemplate');
   if (!tmpl) return;
