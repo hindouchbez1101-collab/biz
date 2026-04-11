@@ -1302,7 +1302,7 @@ from .models import DossierMaternite, ExamenMaternite
 from .forms  import DossierMaterniteForm, ExamenMaterniteForm
 
 @login_required
-@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE)
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
 def dossier_list(request):
     q = (request.GET.get("q") or "").strip()
     t = (request.GET.get("type") or "").strip()
@@ -1363,7 +1363,7 @@ def dossier_new(request, patient_pk):
 
 
 @login_required
-@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE)
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
 def dossier_detail(request, pk):
     d = get_object_or_404(DossierMaternite.objects.select_related("patient"), pk=pk)
     examens = d.patient.examens.all()[:20]
