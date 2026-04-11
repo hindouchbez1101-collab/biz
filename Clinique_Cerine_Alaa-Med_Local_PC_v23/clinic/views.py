@@ -318,7 +318,27 @@ def payment_list(request):
 @login_required
 @require_groups(GROUP_RECEPTION, GROUP_ADMIN)
 def payment_new(request):
-    form = PaymentForm(request.POST or None)
+    # ── Patient rapide : création à la volée sans fiche complète ──
+    post_data = None
+    if request.method == "POST":
+        post_data = request.POST.copy()
+        if post_data.get('quick_patient') == '1':
+            last_name  = post_data.get('quick_last_name', '').strip().upper()
+            first_name = post_data.get('quick_first_name', '').strip()
+            phone      = (post_data.get('quick_phone') or '').strip()
+            if last_name and first_name:
+                if not phone:
+                    phone = f"QUICK-{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
+                try:
+                    patient_obj = Patient.objects.create(
+                        last_name=last_name, first_name=first_name, phone=phone)
+                except Exception:
+                    phone = f"QUICK-{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
+                    patient_obj = Patient.objects.create(
+                        last_name=last_name, first_name=first_name, phone=phone)
+                post_data['patient'] = str(patient_obj.id)
+
+    form = PaymentForm(post_data)
     item_form = PaymentItemForm()
     pack_form = LabPackApplyForm()
     lab_tests = LabTest.objects.filter(is_active=True)
@@ -1888,3 +1908,138 @@ def honoraires_mark_unpaid(request, acc_pk):
     if medecin_pk:
         return redirect('medecin_ambulant_detail', pk=medecin_pk)
     return redirect('medecin_ambulant_list')
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PHARMACIE CLINIQUE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
+def pharmacie_dashboard(request):
+    from .models import MedicamentPharmacie, MouvementPharmacie
+    q = (request.GET.get('q') or '').strip()
+    medicaments = MedicamentPharmacie.objects.all()
+    if q:
+        medicaments = medicaments.filter(nom__icontains=q)
+    mouvements = MouvementPharmacie.objects.select_related('medicament', 'created_by').order_by('-date_mouvement', '-created_at')[:60]
+    ruptures = MedicamentPharmacie.objects.filter(stock_actuel__lte=0, is_active=True).count()
+    alertes  = MedicamentPharmacie.objects.filter(stock_actuel__gt=0, is_active=True,
+                   stock_actuel__lte=models.F('seuil_alerte')).count()
+    return render(request, "pharmacie/dashboard.html", {
+        "medicaments": medicaments,
+        "mouvements": mouvements,
+        "ruptures": ruptures,
+        "alertes": alertes,
+        "q": q,
+    })
+
+
+@login_required
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
+def pharmacie_mouvement_new(request):
+    from .models import MedicamentPharmacie, MouvementPharmacie
+    medicaments = MedicamentPharmacie.objects.filter(is_active=True)
+    if request.method == "POST":
+        med_id = request.POST.get("medicament", "").strip()
+        type_mouvement = request.POST.get("type_mouvement", "").strip()
+        quantite_str = request.POST.get("quantite", "0").replace(",", ".")
+        destinataire = request.POST.get("destinataire", "").strip()
+        note = request.POST.get("note", "").strip()
+        date_str = request.POST.get("date_mouvement", "").strip()
+
+        errors = []
+        if not med_id:
+            errors.append("Veuillez sélectionner un médicament.")
+        if type_mouvement not in ("ENTREE", "SORTIE"):
+            errors.append("Type de mouvement invalide.")
+        try:
+            quantite = float(quantite_str)
+            if quantite <= 0:
+                errors.append("La quantité doit être supérieure à 0.")
+        except ValueError:
+            errors.append("Quantité invalide.")
+            quantite = 0
+
+        if errors:
+            for err in errors:
+                messages.error(request, err)
+            return render(request, "pharmacie/mouvement_form.html", {
+                "medicaments": medicaments, "post": request.POST})
+
+        try:
+            med = MedicamentPharmacie.objects.get(pk=int(med_id))
+        except (MedicamentPharmacie.DoesNotExist, ValueError):
+            messages.error(request, "Médicament introuvable.")
+            return render(request, "pharmacie/mouvement_form.html", {
+                "medicaments": medicaments, "post": request.POST})
+
+        from datetime import date as _date_cls
+        try:
+            date_mouvement = _date_cls.fromisoformat(date_str) if date_str else _date_cls.today()
+        except ValueError:
+            date_mouvement = _date_cls.today()
+
+        with transaction.atomic():
+            MouvementPharmacie.objects.create(
+                medicament=med,
+                type_mouvement=type_mouvement,
+                quantite=quantite,
+                destinataire=destinataire,
+                note=note,
+                date_mouvement=date_mouvement,
+                created_by=request.user,
+            )
+            if type_mouvement == "ENTREE":
+                med.stock_actuel = float(med.stock_actuel) + quantite
+            else:
+                med.stock_actuel = max(0, float(med.stock_actuel) - quantite)
+            med.save(update_fields=['stock_actuel'])
+
+        messages.success(request, f"Mouvement enregistré : {med.nom} × {quantite}.")
+        return redirect("pharmacie_dashboard")
+
+    return render(request, "pharmacie/mouvement_form.html", {
+        "medicaments": medicaments,
+        "today": timezone.localdate(),
+    })
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def pharmacie_medicament_list(request):
+    from .models import MedicamentPharmacie
+    medicaments = MedicamentPharmacie.objects.all()
+    return render(request, "pharmacie/medicaments.html", {"medicaments": medicaments})
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def pharmacie_medicament_save(request, pk=None):
+    from .models import MedicamentPharmacie
+    med = get_object_or_404(MedicamentPharmacie, pk=pk) if pk else None
+    if request.method == "POST":
+        nom   = request.POST.get("nom", "").strip()
+        unite = request.POST.get("unite", "").strip() or "unité"
+        seuil = request.POST.get("seuil_alerte", "0").replace(",", ".")
+        stock = request.POST.get("stock_actuel", "0").replace(",", ".")
+        is_active = request.POST.get("is_active") == "on"
+        try:
+            if med:
+                med.nom = nom
+                med.unite = unite
+                med.seuil_alerte = float(seuil)
+                med.is_active = is_active
+                med.save()
+            else:
+                MedicamentPharmacie.objects.create(
+                    nom=nom, unite=unite,
+                    seuil_alerte=float(seuil),
+                    stock_actuel=float(stock),
+                    is_active=is_active,
+                )
+            messages.success(request, f"Médicament « {nom} » enregistré.")
+        except Exception as ex:
+            messages.error(request, f"Erreur : {ex}")
+        return redirect("pharmacie_medicament_list")
+    return render(request, "pharmacie/medicament_form.html", {"med": med})

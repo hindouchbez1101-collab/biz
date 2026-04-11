@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{% if med %}Modifier{% else %}Nouveau{% endif %} médicament{% endblock %}
+{% block actions %}
+  <a class="btn" href="{% url 'pharmacie_medicament_list' %}">← Liste médicaments</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<div class="cf-wrap" style="max-width:500px;margin:0 auto">
+<form method="post">
+{% csrf_token %}
+<div class="cf-card">
+  <div class="cf-section-title">💊 {% if med %}Modifier{% else %}Nouveau{% endif %} médicament</div>
+
+  <div class="cf-field">
+    <label class="cf-label">Nom du médicament <span class="req">*</span></label>
+    <input class="cf-input" type="text" name="nom" required
+      value="{{ med.nom|default:'' }}" placeholder="ex: Paracétamol 500mg">
+  </div>
+
+  <div class="cf-field">
+    <label class="cf-label">Unité de mesure</label>
+    <input class="cf-input" type="text" name="unite"
+      value="{{ med.unite|default:'unité' }}"
+      placeholder="comprimés, flacons, ampoules, mg, mL…">
+  </div>
+
+  {% if not med %}
+  <div class="cf-field">
+    <label class="cf-label">Stock initial <span class="opt">(à la création)</span></label>
+    <input class="cf-input" type="number" name="stock_actuel"
+      step="0.01" min="0" value="0" placeholder="0">
+    <div class="cf-hint">Utilisez les mouvements d'entrée pour ajuster le stock ensuite.</div>
+  </div>
+  {% endif %}
+
+  <div class="cf-field">
+    <label class="cf-label">Seuil d'alerte <span class="opt">(stock bas)</span></label>
+    <input class="cf-input" type="number" name="seuil_alerte"
+      step="0.01" min="0"
+      value="{{ med.seuil_alerte|default:'5' }}"
+      placeholder="5">
+    <div class="cf-hint">Un badge d'alerte apparaît quand le stock descend en dessous de ce seuil.</div>
+  </div>
+
+  {% if med %}
+  <div class="cf-field" style="display:flex;align-items:center;gap:10px">
+    <input type="checkbox" name="is_active" id="isActive" {% if med.is_active %}checked{% endif %}
+      style="width:18px;height:18px;cursor:pointer">
+    <label for="isActive" style="cursor:pointer;font-size:14px">Médicament actif</label>
+  </div>
+  {% endif %}
+
+  <div class="cf-actions">
+    <button class="cf-btn-submit" type="submit">✔ Enregistrer</button>
+    <a class="btn" href="{% url 'pharmacie_medicament_list' %}">Annuler</a>
+  </div>
+</div>
+</form>
+</div>
+{% endblock %}
