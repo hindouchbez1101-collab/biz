@@ -73,6 +73,9 @@ def logout_view(request):
 @login_required
 def home(request):
     groups = set(request.user.groups.values_list("name", flat=True))
+    # Les agents pharmacie n'ont pas accès au dashboard général → redirection
+    if 'PHARMACIE' in groups and not groups.intersection({'RECEPTION', 'GERANT', 'ADMIN'}):
+        return redirect('pharmacie_dashboard')
     today = timezone.localdate()
     kpi = {
         "rdv_today": Appointment.objects.filter(start_at__date=today).count(),
