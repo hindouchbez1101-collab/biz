@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from datetime import date as _date
 
 class Patient(models.Model):
     first_name = models.CharField(max_length=120)
@@ -485,3 +486,56 @@ class MedicamentConsommable(models.Model):
 
     def __str__(self):
         return self.nom
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PHARMACIE CLINIQUE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class MedicamentPharmacie(models.Model):
+    nom          = models.CharField(max_length=200, unique=True, verbose_name="Nom du médicament")
+    unite        = models.CharField(max_length=50, blank=True, default="unité", verbose_name="Unité")
+    stock_actuel = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Stock actuel")
+    seuil_alerte = models.DecimalField(max_digits=10, decimal_places=2, default=5, verbose_name="Seuil d'alerte")
+    is_active    = models.BooleanField(default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["nom"]
+        verbose_name = "Médicament pharmacie"
+
+    def __str__(self):
+        return self.nom
+
+    @property
+    def en_rupture(self):
+        return float(self.stock_actuel) <= 0
+
+    @property
+    def alerte_stock(self):
+        return 0 < float(self.stock_actuel) <= float(self.seuil_alerte)
+
+
+class MouvementPharmacie(models.Model):
+    class TypeMouvement(models.TextChoices):
+        ENTREE = "ENTREE", "Entrée (réception)"
+        SORTIE = "SORTIE", "Sortie (délivrance)"
+
+    medicament     = models.ForeignKey(MedicamentPharmacie, on_delete=models.PROTECT,
+                         related_name="mouvements", verbose_name="Médicament")
+    type_mouvement = models.CharField(max_length=10, choices=TypeMouvement.choices, verbose_name="Type")
+    quantite       = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Quantité")
+    destinataire   = models.CharField(max_length=200, blank=True, default="",
+                         verbose_name="Délivré à / Fournisseur")
+    note           = models.CharField(max_length=500, blank=True, default="", verbose_name="Note")
+    date_mouvement = models.DateField(default=_date.today, verbose_name="Date")
+    created_by     = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                         related_name="mouvements_pharmacie")
+    created_at     = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date_mouvement", "-created_at"]
+        verbose_name = "Mouvement pharmacie"
+
+    def __str__(self):
+        return f"{self.get_type_mouvement_display()} — {self.medicament.nom} × {self.quantite}"

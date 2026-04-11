@@ -17,7 +17,7 @@
 
         <div class="cf-field">
           <label class="cf-label">Patient <span class="req">*</span></label>
-          <div class="cf-autocomplete">
+          <div class="cf-autocomplete" id="patientAutocomplete">
             <input class="cf-input" type="text" id="patientSearch"
               placeholder="🔍  Nom ou téléphone…" autocomplete="off">
             <input type="hidden" name="patient" id="patientId">
@@ -29,6 +29,31 @@
                 <div class="phone">📞 {{ p.phone }}</div>
               </div>
               {% endfor %}
+            </div>
+          </div>
+          <!-- Patient rapide -->
+          <div style="margin-top:8px">
+            <button type="button" id="quickPatientBtn" onclick="toggleQuickPatient()"
+              style="font-size:12px;padding:5px 12px;border-radius:100px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer">
+              ⚡ Créer patient rapide (sans fiche complète)
+            </button>
+          </div>
+          <div id="quickPatientSection" style="display:none;margin-top:10px;padding:14px 16px;background:color-mix(in srgb,var(--accent) 6%,transparent);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent);border-radius:12px">
+            <div class="cf-hint" style="margin-bottom:10px;font-weight:600">⚡ Nouveau patient — saisie rapide</div>
+            <input type="hidden" name="quick_patient" id="quickPatientFlag" value="0">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label class="cf-label">Nom <span class="req">*</span></label>
+                <input class="cf-input" type="text" name="quick_last_name" id="quickLastName" placeholder="Nom de famille">
+              </div>
+              <div>
+                <label class="cf-label">Prénom <span class="req">*</span></label>
+                <input class="cf-input" type="text" name="quick_first_name" id="quickFirstName" placeholder="Prénom">
+              </div>
+              <div style="grid-column:span 2">
+                <label class="cf-label">Téléphone <span class="opt">(optionnel)</span></label>
+                <input class="cf-input" type="text" name="quick_phone" placeholder="06…">
+              </div>
             </div>
           </div>
         </div>
@@ -329,6 +354,31 @@
 </style>
 
 <script>
+// ── Patient rapide toggle ─────────────────────────────────────
+function toggleQuickPatient() {
+  var sec  = document.getElementById('quickPatientSection');
+  var flag = document.getElementById('quickPatientFlag');
+  var btn  = document.getElementById('quickPatientBtn');
+  var auto = document.getElementById('patientAutocomplete');
+  var isOpen = sec.style.display !== 'none';
+  if (isOpen) {
+    sec.style.display = 'none';
+    flag.value = '0';
+    btn.textContent = '⚡ Créer patient rapide (sans fiche complète)';
+    auto.style.opacity = '1';
+    auto.style.pointerEvents = '';
+  } else {
+    sec.style.display = '';
+    flag.value = '1';
+    btn.textContent = '← Utiliser la liste patients';
+    auto.style.opacity = '0.3';
+    auto.style.pointerEvents = 'none';
+    document.getElementById('patientId').value = '';
+    document.getElementById('patientSearch').value = '';
+    document.getElementById('quickLastName').focus();
+  }
+}
+
 // ── Patient autocomplete ──────────────────────────────────────
 (function() {
   const search = document.getElementById('patientSearch');

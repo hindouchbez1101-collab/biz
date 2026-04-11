@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Nouveau mouvement — Pharmacie{% endblock %}
+{% block actions %}
+  <a class="btn" href="{% url 'pharmacie_dashboard' %}">← Pharmacie</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<div class="cf-wrap" style="max-width:600px;margin:0 auto">
+<form method="post" id="mvtForm">
+{% csrf_token %}
+<div class="cf-card">
+  <div class="cf-section-title">💊 Enregistrer un mouvement</div>
+
+  <!-- Type de mouvement -->
+  <div class="cf-field" style="margin-bottom:20px">
+    <label class="cf-label">Type de mouvement <span class="req">*</span></label>
+    <div style="display:flex;gap:10px">
+      <button type="button" id="btnEntree" class="payer-btn active" onclick="setType('ENTREE')"
+        style="padding:10px 24px;border-radius:100px;border:2px solid var(--line);background:color-mix(in srgb,#22c55e 15%,transparent);color:#16a34a;font-weight:700;cursor:pointer">
+        📥 Entrée (réception)
+      </button>
+      <button type="button" id="btnSortie" class="payer-btn" onclick="setType('SORTIE')"
+        style="padding:10px 24px;border-radius:100px;border:2px solid var(--line);background:transparent;color:var(--text);font-weight:700;cursor:pointer">
+        📤 Sortie (délivrance)
+      </button>
+    </div>
+    <input type="hidden" name="type_mouvement" id="typeMvt" value="ENTREE">
+  </div>
+
+  <!-- Médicament -->
+  <div class="cf-field">
+    <label class="cf-label">Médicament <span class="req">*</span></label>
+    <div class="cf-select-wrap">
+      <select class="cf-select" name="medicament" id="medSelect" required>
+        <option value="">— Sélectionner —</option>
+        {% for m in medicaments %}
+        <option value="{{ m.pk }}"
+          {% if post.medicament == m.pk|stringformat:"s" %}selected{% endif %}>
+          {{ m.nom }}
+          ({{ m.stock_actuel|floatformat:0 }} {{ m.unite }})
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="cf-hint" style="margin-top:4px">
+      Stock actuel entre parenthèses.
+      <a href="{% url 'pharmacie_medicament_new' %}" target="_blank">+ Ajouter un médicament</a>
+    </div>
+  </div>
+
+  <!-- Quantité -->
+  <div class="cf-field">
+    <label class="cf-label">Quantité <span class="req">*</span></label>
+    <input class="cf-input" type="number" name="quantite" id="qte"
+      step="0.01" min="0.01" required placeholder="ex: 10"
+      value="{{ post.quantite|default:'' }}">
+  </div>
+
+  <!-- Destinataire -->
+  <div class="cf-field" id="destRow">
+    <label class="cf-label" id="destLabel">Délivré à <span class="opt">(nom du patient / service)</span></label>
+    <input class="cf-input" type="text" name="destinataire" id="destinataire"
+      placeholder="Nom de la personne ou du service…"
+      value="{{ post.destinataire|default:'' }}">
+  </div>
+
+  <!-- Date -->
+  <div class="cf-field">
+    <label class="cf-label">Date du mouvement</label>
+    <input class="cf-input" type="date" name="date_mouvement"
+      value="{{ post.date_mouvement|default:today|date:'Y-m-d' }}">
+  </div>
+
+  <!-- Note -->
+  <div class="cf-field">
+    <label class="cf-label">Note <span class="opt">(optionnel)</span></label>
+    <input class="cf-input" type="text" name="note"
+      placeholder="Remarque, lot, numéro de commande…"
+      value="{{ post.note|default:'' }}">
+  </div>
+
+  <div class="cf-actions">
+    <button class="cf-btn-submit" type="submit">✔ Enregistrer le mouvement</button>
+  </div>
+</div>
+</form>
+</div>
+
+<style>
+.payer-btn-active-green {
+  background: color-mix(in srgb,#22c55e 15%,transparent) !important;
+  border-color: #22c55e !important;
+  color: #16a34a !important;
+}
+.payer-btn-active-blue {
+  background: color-mix(in srgb,#3b82f6 15%,transparent) !important;
+  border-color: #3b82f6 !important;
+  color: #2563eb !important;
+}
+</style>
+<script>
+// Pré-sélection depuis l'URL
+(function() {
+  var params = new URLSearchParams(location.search);
+  var t = params.get('type');
+  var m = params.get('med');
+  if (t) setType(t);
+  if (m) {
+    var sel = document.getElementById('medSelect');
+    if (sel) sel.value = m;
+  }
+})();
+
+function setType(val) {
+  document.getElementById('typeMvt').value = val;
+  var btnE = document.getElementById('btnEntree');
+  var btnS = document.getElementById('btnSortie');
+  var destLabel = document.getElementById('destLabel');
+  if (val === 'ENTREE') {
+    btnE.style.background = 'color-mix(in srgb,#22c55e 15%,transparent)';
+    btnE.style.borderColor = '#22c55e';
+    btnE.style.color = '#16a34a';
+    btnS.style.background = 'transparent';
+    btnS.style.borderColor = 'var(--line)';
+    btnS.style.color = 'var(--text)';
+    destLabel.innerHTML = 'Fournisseur <span class="opt">(optionnel)</span>';
+    document.getElementById('destinataire').placeholder = 'Nom du fournisseur…';
+  } else {
+    btnS.style.background = 'color-mix(in srgb,#3b82f6 15%,transparent)';
+    btnS.style.borderColor = '#3b82f6';
+    btnS.style.color = '#2563eb';
+    btnE.style.background = 'transparent';
+    btnE.style.borderColor = 'var(--line)';
+    btnE.style.color = 'var(--text)';
+    destLabel.innerHTML = 'Délivré à <span class="req">*</span> <span class="opt">(nom du patient / service)</span>';
+    document.getElementById('destinataire').placeholder = 'Nom de la personne…';
+  }
+}
+</script>
+{% endblock %}

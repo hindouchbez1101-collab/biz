@@ -85,4 +85,11 @@ urlpatterns = [
     path("medecins-ambulants/honoraires/<int:acc_pk>/payer/",   v.honoraires_mark_paid,      name="honoraires_mark_paid"),
     path("medecins-ambulants/honoraires/<int:acc_pk>/annuler/", v.honoraires_mark_unpaid,    name="honoraires_mark_unpaid"),
     path("medecins-ambulants/honoraires/<int:acc_pk>/modifier/", v.honoraires_edit_montant,  name="honoraires_edit_montant"),
+
+    # Pharmacie clinique
+    path("pharmacie/",                              v.pharmacie_dashboard,        name="pharmacie_dashboard"),
+    path("pharmacie/mouvement/new/",                v.pharmacie_mouvement_new,    name="pharmacie_mouvement_new"),
+    path("pharmacie/medicaments/",                  v.pharmacie_medicament_list,  name="pharmacie_medicament_list"),
+    path("pharmacie/medicaments/new/",              v.pharmacie_medicament_save,  name="pharmacie_medicament_new"),
+    path("pharmacie/medicaments/<int:pk>/edit/",    v.pharmacie_medicament_save,  name="pharmacie_medicament_edit"),
 ]
