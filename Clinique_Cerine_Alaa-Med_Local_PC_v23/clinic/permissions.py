@@ -1,9 +1,10 @@
 from functools import wraps
 from django.http import HttpResponseForbidden
 
-GROUP_RECEPTION = "RECEPTION"
-GROUP_GERANT = "GERANT"
-GROUP_ADMIN = "ADMIN"
+GROUP_RECEPTION  = "RECEPTION"
+GROUP_GERANT     = "GERANT"
+GROUP_ADMIN      = "ADMIN"
+GROUP_PHARMACIE  = "PHARMACIE"
 
 def in_groups(user, allowed):
     if not user.is_authenticated:
