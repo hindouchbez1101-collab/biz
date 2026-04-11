@@ -45,8 +45,6 @@
       {% endif %}
 
       {% if "PHARMACIE" in USER_GROUPS and "RECEPTION" not in USER_GROUPS and "ADMIN" not in USER_GROUPS and "GERANT" not in USER_GROUPS %}
-      <div class="nav-section">Dossiers Maternité</div>
-      <a class="nav-item" href="/dossiers/" onclick="closeSidebar()">🗂️ Dossiers Maternité</a>
       <div class="nav-section">Pharmacie</div>
       <a class="nav-item" href="/pharmacie/" onclick="closeSidebar()">💊 Stock & Mouvements</a>
       <a class="nav-item" href="/pharmacie/mouvement/new/" onclick="closeSidebar()">📤 Nouveau mouvement</a>
