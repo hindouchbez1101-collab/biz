@@ -239,8 +239,13 @@
         </div>
       </div>
 
+      <!-- Avertissement double encaissement -->
+      <div id="alreadyPaidWarning" style="display:none;margin-bottom:12px;padding:14px 16px;border-radius:12px;background:color-mix(in srgb,#ef4444 10%,transparent);border:1.5px solid color-mix(in srgb,#ef4444 40%,transparent);color:#ef4444;font-size:13px;font-weight:600">
+        ⛔ Cet accouchement a déjà été encaissé (<span id="existingReceiptNo"></span>).
+        Un seul encaissement est autorisé par séjour.
+      </div>
       <div class="cf-actions" style="margin-top:16px">
-        <button class="cf-btn-submit" type="submit" style="font-size:16px;padding:15px 32px">
+        <button class="cf-btn-submit" id="caisseSubmitBtn" type="submit" style="font-size:16px;padding:15px 32px">
           ✔ Valider &amp; Imprimer le reçu
         </button>
       </div>
@@ -344,10 +349,30 @@ async function loadDossier(patientId, dossierId) {
         if (tn) tn.value = data.num_ass;
       }
       recalc();
+      // ── Vérification double encaissement ──────────────────────
+      const warn = document.getElementById('alreadyPaidWarning');
+      const submitBtn = document.getElementById('caisseSubmitBtn');
+      if (data.already_paid) {
+        document.getElementById('existingReceiptNo').textContent = data.existing_receipt || '';
+        warn.style.display = '';
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.4';
+        submitBtn.style.cursor = 'not-allowed';
+      } else {
+        warn.style.display = 'none';
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '';
+        submitBtn.style.cursor = '';
+      }
     } else {
       document.getElementById('dossierFound').style.display = 'none';
       document.getElementById('noDossier').style.display = '';
       document.getElementById('dossierId').value = '';
+      // Pas de dossier = pas de blocage
+      document.getElementById('alreadyPaidWarning').style.display = 'none';
+      const submitBtn = document.getElementById('caisseSubmitBtn');
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '';
     }
   } catch(e) {
     document.getElementById('dossierFound').style.display = 'none';

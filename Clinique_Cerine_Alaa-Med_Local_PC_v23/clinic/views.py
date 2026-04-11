@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, F
 from django.utils import timezone
 from django.http import HttpResponse
 
@@ -11,7 +11,7 @@ from .utils import montant_en_lettres_fr
 
 from .forms import LoginForm, PatientForm, AppointmentForm, PaymentForm, PaymentItemForm, ExpenseForm, LabPackApplyForm, SupplierForm, PurchaseForm, PurchaseItemForm, EmployeeForm, SalaryForm, MedecinAmbulantForm, HonorairesPayerForm
 from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AuditLog, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, TarifAccouchement, AccouchementDetail, Doctor, MedecinAmbulant
-from .permissions import require_groups, GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, in_groups
+from .permissions import require_groups, GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE, in_groups
 
 
 def _next_dossier_numero(type_dossier="GENERAL"):
@@ -1299,7 +1299,7 @@ from .models import DossierMaternite, ExamenMaternite
 from .forms  import DossierMaterniteForm, ExamenMaterniteForm
 
 @login_required
-@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE)
 def dossier_list(request):
     q = (request.GET.get("q") or "").strip()
     t = (request.GET.get("type") or "").strip()
@@ -1360,7 +1360,7 @@ def dossier_new(request, patient_pk):
 
 
 @login_required
-@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE)
 def dossier_detail(request, pk):
     d = get_object_or_404(DossierMaternite.objects.select_related("patient"), pk=pk)
     examens = d.patient.examens.all()[:20]
@@ -1641,6 +1641,22 @@ def api_patient_dossier(request):
         "payer_type":  dossier.type_dossier if dossier and dossier.type_dossier in ("CHIFA","MILITAIRE") else "NORMAL",
         "num_ass":     dossier.num_ass if dossier else "",
     }
+
+    # Vérifier si cet accouchement a déjà été encaissé (protection double paiement)
+    already_paid = False
+    existing_receipt = ""
+    if dossier and dossier.date_entree:
+        existing_acc = AccouchementDetail.objects.filter(
+            payment__patient=patient,
+            payment__service_type__in=('NAT', 'CES'),
+            payment__paid_at__date__gte=dossier.date_entree,
+        ).select_related('payment').first()
+        if existing_acc:
+            already_paid = True
+            existing_receipt = existing_acc.payment.receipt_no
+    data['already_paid'] = already_paid
+    data['existing_receipt'] = existing_receipt
+
     return JsonResponse(data)
 
 
@@ -1697,6 +1713,24 @@ def caisse_view(request):
             sejour = nb_nuits * tarif_nuit
             # honoraires_medecin exclus de la facture patient — réglés en interne
             total_frais = salle + sejour + anest + sf + meds + fadmin + cert + fchifa
+
+            # ── Blocage double encaissement accouchement ──────────────────────
+            if service_type in ('NAT', 'CES') and dossier_id_:
+                try:
+                    doss = DossierMaternite.objects.get(pk=int(dossier_id_))
+                    if doss.date_entree:
+                        existing = AccouchementDetail.objects.filter(
+                            payment__patient_id=int(patient_id),
+                            payment__service_type__in=('NAT', 'CES'),
+                            payment__paid_at__date__gte=doss.date_entree,
+                        ).exists()
+                        if existing:
+                            messages.error(request,
+                                "⚠ Cet accouchement a déjà été encaissé. "
+                                "Un seul encaissement est autorisé par séjour.")
+                            return redirect('caisse_view')
+                except (DossierMaternite.DoesNotExist, ValueError):
+                    pass
 
             tiers = float(tiers_montant) if tiers_montant else 0
             total_patient = max(0, total_frais - tiers)
@@ -1915,7 +1949,7 @@ def honoraires_mark_unpaid(request, acc_pk):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @login_required
-@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE)
 def pharmacie_dashboard(request):
     from .models import MedicamentPharmacie, MouvementPharmacie
     q = (request.GET.get('q') or '').strip()
@@ -1925,7 +1959,7 @@ def pharmacie_dashboard(request):
     mouvements = MouvementPharmacie.objects.select_related('medicament', 'created_by').order_by('-date_mouvement', '-created_at')[:60]
     ruptures = MedicamentPharmacie.objects.filter(stock_actuel__lte=0, is_active=True).count()
     alertes  = MedicamentPharmacie.objects.filter(stock_actuel__gt=0, is_active=True,
-                   stock_actuel__lte=models.F('seuil_alerte')).count()
+                   stock_actuel__lte=F('seuil_alerte')).count()
     return render(request, "pharmacie/dashboard.html", {
         "medicaments": medicaments,
         "mouvements": mouvements,
@@ -1936,7 +1970,7 @@ def pharmacie_dashboard(request):
 
 
 @login_required
-@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN)
+@require_groups(GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE)
 def pharmacie_mouvement_new(request):
     from .models import MedicamentPharmacie, MouvementPharmacie
     medicaments = MedicamentPharmacie.objects.filter(is_active=True)
@@ -2006,7 +2040,7 @@ def pharmacie_mouvement_new(request):
 
 
 @login_required
-@require_groups(GROUP_GERANT, GROUP_ADMIN)
+@require_groups(GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE)
 def pharmacie_medicament_list(request):
     from .models import MedicamentPharmacie
     medicaments = MedicamentPharmacie.objects.all()
