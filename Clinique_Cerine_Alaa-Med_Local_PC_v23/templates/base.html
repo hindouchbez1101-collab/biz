@@ -23,7 +23,11 @@
 
     {% if user.is_authenticated %}
     <nav class="nav">
+      {% if "PHARMACIE" in USER_GROUPS and "RECEPTION" not in USER_GROUPS and "ADMIN" not in USER_GROUPS and "GERANT" not in USER_GROUPS %}
+      <a class="nav-item" href="/pharmacie/" onclick="closeSidebar()">🏠 Accueil Pharmacie</a>
+      {% else %}
       <a class="nav-item" href="/" onclick="closeSidebar()">📊 Dashboard</a>
+      {% endif %}
 
       {% if "RECEPTION" in USER_GROUPS or "ADMIN" in USER_GROUPS or "GERANT" in USER_GROUPS %}
       <div class="nav-section">Réception</div>
