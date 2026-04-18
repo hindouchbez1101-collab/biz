@@ -1,28 +1,36 @@
 from pathlib import Path
 import os
-import dj_database_url  # تأكد من إضافة dj-database-url لملف requirements.txt
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
 
-# --- الأمان وإعدادات البيئة ---
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-key-for-dev")
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-# إضافة رابط Railway الخاص بك هنا
-ALLOWED_HOSTS = [
-    "biz-production-22f5.up.railway.app", 
-    "localhost", 
-    "127.0.0.1",
-    ".railway.app"
-]
+# En mode DEBUG (réseau local), accepter toutes les IPs
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = [
+        "biz-production-22f5.up.railway.app",
+        "localhost",
+        "127.0.0.1",
+        ".railway.app",
+    ]
 
-# حل مشكلة 403 CSRF في الروابط الآمنة
 CSRF_TRUSTED_ORIGINS = [
     "https://biz-production-22f5.up.railway.app",
-    "https://*.railway.app"
+    "https://*.railway.app",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
+
+# Ajouter les origines CSRF depuis l'environnement (pour réseau local)
+_extra_origins = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+if _extra_origins:
+    CSRF_TRUSTED_ORIGINS += [o.strip() for o in _extra_origins.split(",") if o.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -99,12 +107,16 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- إعدادات الحماية الإضافية لـ HTTPS ---
+# HTTPS uniquement sur Railway (pas sur réseau local)
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+else:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
