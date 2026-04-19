@@ -57,11 +57,46 @@
         <div class="cf-field span-2">
           <label class="cf-label">Type d'acte</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap" id="typeActeBtns">
-            <button type="button" class="payer-btn active" data-val="NAT" onclick="setTypeActe('NAT')">🌿 Accouchement naturel</button>
-            <button type="button" class="payer-btn" data-val="CES" onclick="setTypeActe('CES')">⚕️ Césarienne</button>
+            <!-- Maternité -->
+            <div style="width:100%;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:2px">Maternité</div>
+            <button type="button" class="payer-btn active" data-val="NAT"    onclick="setTypeActe('NAT')">🌿 Accouchement naturel</button>
+            <button type="button" class="payer-btn"        data-val="CES"    onclick="setTypeActe('CES')">⚕️ Césarienne</button>
+            <!-- Actes chirurgicaux / gynéco -->
+            <div style="width:100%;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:8px;margin-bottom:2px">Actes chirurgicaux / gynéco</div>
+            <button type="button" class="payer-btn" data-val="CURT"   onclick="setTypeActe('CURT')">Curetage</button>
+            <button type="button" class="payer-btn" data-val="STERT"  onclick="setTypeActe('STERT')">Stérilet</button>
+            <button type="button" class="payer-btn" data-val="COLUTR" onclick="setTypeActe('COLUTR')">Col utérus</button>
+            <button type="button" class="payer-btn" data-val="PMA"    onclick="setTypeActe('PMA')">PMA</button>
+            <button type="button" class="payer-btn" data-val="CIRCO"  onclick="setTypeActe('CIRCO')">Circoncision</button>
+            <button type="button" class="payer-btn" data-val="ORCHI"  onclick="setTypeActe('ORCHI')">Orchidopexie</button>
+            <button type="button" class="payer-btn" data-val="MALGEN" onclick="setTypeActe('MALGEN')">Malformations génitales</button>
+            <button type="button" class="payer-btn" data-val="CHIRP"  onclick="setTypeActe('CHIRP')">Chirurgie pénis</button>
+            <button type="button" class="payer-btn" data-val="HERNIE" onclick="setTypeActe('HERNIE')">Hernie</button>
+            <button type="button" class="payer-btn" data-val="KYSTE"  onclick="setTypeActe('KYSTE')">Kyste</button>
+            <button type="button" class="payer-btn" data-val="DRAIN"  onclick="setTypeActe('DRAIN')">Drainage</button>
+            <!-- Examens médicaux -->
+            <div style="width:100%;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:8px;margin-bottom:2px">Examens médicaux</div>
+            <button type="button" class="payer-btn" data-val="ECHO"   onclick="setTypeActe('ECHO')">🔊 Échographie</button>
+            <button type="button" class="payer-btn" data-val="LAB"    onclick="setTypeActe('LAB')">🧪 Analyses</button>
+            <button type="button" class="payer-btn" data-val="ECG"    onclick="setTypeActe('ECG')">ECG</button>
+            <button type="button" class="payer-btn" data-val="EEG"    onclick="setTypeActe('EEG')">EEG</button>
+            <button type="button" class="payer-btn" data-val="SPIRO"  onclick="setTypeActe('SPIRO')">Spirométrie</button>
+            <button type="button" class="payer-btn" data-val="TALLER" onclick="setTypeActe('TALLER')">Tests allergiques</button>
+            <button type="button" class="payer-btn" data-val="TAUDIT" onclick="setTypeActe('TAUDIT')">Tests auditifs</button>
+            <!-- Consultations -->
+            <div style="width:100%;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:8px;margin-bottom:2px">Consultations</div>
             <button type="button" class="payer-btn" data-val="CONSULT" onclick="setTypeActe('CONSULT')">💬 Consultation</button>
-            <button type="button" class="payer-btn" data-val="ECHO" onclick="setTypeActe('ECHO')">🔊 Échographie</button>
-            <button type="button" class="payer-btn" data-val="LAB" onclick="setTypeActe('LAB')">🧪 Analyses</button>
+            <button type="button" class="payer-btn" data-val="CGYNEC"  onclick="setTypeActe('CGYNEC')">Gynécologie</button>
+            <button type="button" class="payer-btn" data-val="COBST"   onclick="setTypeActe('COBST')">Obstétrique</button>
+            <button type="button" class="payer-btn" data-val="CPEDIA"  onclick="setTypeActe('CPEDIA')">Pédiatrie</button>
+            <button type="button" class="payer-btn" data-val="CCHIRG"  onclick="setTypeActe('CCHIRG')">Chirurgie générale</button>
+            <button type="button" class="payer-btn" data-val="CENDO"   onclick="setTypeActe('CENDO')">Endocrinologie</button>
+            <button type="button" class="payer-btn" data-val="CNEPHR"  onclick="setTypeActe('CNEPHR')">Néphrologie</button>
+            <button type="button" class="payer-btn" data-val="CPNEUM"  onclick="setTypeActe('CPNEUM')">Pneumologie</button>
+            <button type="button" class="payer-btn" data-val="CNUTRI"  onclick="setTypeActe('CNUTRI')">Nutrition</button>
+            <!-- Autre -->
+            <div style="width:100%;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:8px;margin-bottom:2px">Autre</div>
+            <button type="button" class="payer-btn" data-val="OTHER"   onclick="setTypeActe('OTHER')">Autre</button>
           </div>
           <input type="hidden" name="service_type" id="serviceType" value="NAT">
         </div>
@@ -113,7 +148,146 @@
 
   <!-- ══ COLONNE DROITE — Détail frais ══ -->
   <div>
-    <div class="cf-card">
+
+    <!-- ── Section ACTE (non-maternité) ─────────────────────────────────── -->
+    <div class="cf-card" id="sectionActe" style="display:none">
+      <div class="cf-section-title" id="acteTitleLabel">🏥 Détail des frais</div>
+
+      <div class="cf-grid cols-2" style="gap:14px">
+        <div class="cf-field span-2">
+          <label class="cf-label">PRX DE L'ACTE <span class="opt">DA</span></label>
+          <input class="cf-input" type="number" name="acte_prix_acte" id="aPrixActe"
+            step="0.01" min="0" value="0" oninput="recalcActe()"
+            style="font-size:18px;font-weight:700;padding:14px 16px">
+        </div>
+      </div>
+
+      <!-- Tableau extras -->
+      <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:13px">
+        <thead>
+          <tr style="border-bottom:1.5px solid var(--line)">
+            <th style="text-align:left;padding:6px 8px;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase">Supplément</th>
+            <th style="padding:6px 8px;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;text-align:center">Nb / Qualité</th>
+            <th style="padding:6px 8px;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;text-align:right">Prix</th>
+            <th style="padding:6px 8px;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;text-align:right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Nuité en plus -->
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:8px 8px;font-weight:600">Nuité en plus</td>
+            <td style="padding:4px 8px;text-align:center">
+              <input class="cf-input" type="number" name="acte_nuite_nb" id="aNuiteNb"
+                min="0" value="0" style="width:64px;text-align:center;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+            <td style="padding:4px 8px;text-align:right">
+              <input class="cf-input" type="number" name="acte_nuite_prix" id="aNuitePrix"
+                min="0" step="0.01" value="0" style="width:90px;text-align:right;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+            <td style="padding:8px 8px;text-align:right;font-weight:700" id="aNuiteTotal">0 DA</td>
+          </tr>
+          <!-- Garde Malade -->
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:8px 8px;font-weight:600">Garde Malade</td>
+            <td style="padding:4px 8px;text-align:center">
+              <input class="cf-input" type="number" name="acte_garde_nb" id="aGardeNb"
+                min="0" value="0" style="width:64px;text-align:center;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+            <td style="padding:4px 8px;text-align:right">
+              <input class="cf-input" type="number" name="acte_garde_prix" id="aGardePrix"
+                min="0" step="0.01" value="0" style="width:90px;text-align:right;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+            <td style="padding:8px 8px;text-align:right;font-weight:700" id="aGardeTotal">0 DA</td>
+          </tr>
+          <!-- Bilan Ajouté -->
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:8px 8px;font-weight:600">Bilan Ajouté</td>
+            <td colspan="2" style="padding:4px 8px">
+              <input class="cf-input" type="text" name="acte_bilan_desc" id="aBilanDesc"
+                placeholder="Description…" style="width:100%;padding:6px 8px;font-size:13px">
+            </td>
+            <td style="padding:4px 8px;text-align:right">
+              <input class="cf-input" type="number" name="acte_bilan_total" id="aBilanTotal"
+                min="0" step="0.01" value="0" style="width:90px;text-align:right;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+          </tr>
+          <!-- Traitement Associé -->
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:8px 8px;font-weight:600">Traitement Associé</td>
+            <td colspan="2" style="padding:4px 8px">
+              <input class="cf-input" type="text" name="acte_traitement_desc" id="aTraitDesc"
+                placeholder="Description…" style="width:100%;padding:6px 8px;font-size:13px">
+            </td>
+            <td style="padding:4px 8px;text-align:right">
+              <input class="cf-input" type="number" name="acte_traitement_total" id="aTraitTotal"
+                min="0" step="0.01" value="0" style="width:90px;text-align:right;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+          </tr>
+          <!-- Oxygène Bébé -->
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:8px 8px;font-weight:600">Oxygène Bébé</td>
+            <td colspan="2" style="padding:8px 8px;color:var(--muted);font-size:12px"></td>
+            <td style="padding:4px 8px;text-align:right">
+              <input class="cf-input" type="number" name="acte_oxygene_total" id="aOxyTotal"
+                min="0" step="0.01" value="0" style="width:90px;text-align:right;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+          </tr>
+          <!-- Transfusion -->
+          <tr style="border-bottom:1.5px solid var(--line)">
+            <td style="padding:8px 8px;font-weight:600">Transfusion</td>
+            <td colspan="2" style="padding:8px 8px;color:var(--muted);font-size:12px"></td>
+            <td style="padding:4px 8px;text-align:right">
+              <input class="cf-input" type="number" name="acte_transfusion_total" id="aTransTotal"
+                min="0" step="0.01" value="0" style="width:90px;text-align:right;padding:6px 8px;font-size:13px" oninput="recalcActe()">
+            </td>
+          </tr>
+          <!-- Total à payer -->
+          <tr style="background:color-mix(in srgb,var(--accent) 8%,transparent)">
+            <td colspan="3" style="padding:10px 8px;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.5px">Total à payer</td>
+            <td style="padding:10px 8px;text-align:right;font-weight:900;font-size:16px;color:var(--accent)" id="aGrandTotal">0 DA</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="cf-grid cols-2" style="gap:14px;margin-top:14px">
+        <div class="cf-field span-2">
+          <label class="cf-label">Notes <span class="opt">(optionnel)</span></label>
+          <textarea class="cf-textarea" name="acte_notes" rows="2"
+            placeholder="Observations complémentaires…"></textarea>
+        </div>
+      </div>
+
+      <!-- Récapitulatif tiers payant -->
+      <div style="margin-top:18px;border:1.5px solid var(--line);border-radius:16px;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr;background:color-mix(in srgb,var(--accent) 8%,transparent)">
+          <div style="padding:14px 16px;border-right:1px solid var(--line)">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px">Tiers payant</div>
+            <div style="font-size:18px;font-weight:800;color:var(--accent2)" id="recapTiersActe">0 DA</div>
+          </div>
+          <div style="padding:14px 16px">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px">À payer par la patiente</div>
+            <div style="font-size:22px;font-weight:900;color:var(--accent)" id="recapPatientActe">0 DA</div>
+          </div>
+        </div>
+        <div style="padding:14px 16px;border-top:1.5px solid color-mix(in srgb,var(--accent) 30%,transparent);background:color-mix(in srgb,var(--accent) 14%,transparent);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Total général</div>
+          <div style="font-size:28px;font-weight:900" id="recapTotalActe">0 DA</div>
+        </div>
+      </div>
+
+      <!-- Double encaissement warning + submit -->
+      <div id="alreadyPaidWarningActe" style="display:none;margin-top:12px;padding:14px 16px;border-radius:12px;background:color-mix(in srgb,#ef4444 10%,transparent);border:1.5px solid color-mix(in srgb,#ef4444 40%,transparent);color:#ef4444;font-size:13px;font-weight:600">
+        ⛔ Déjà encaissé.
+      </div>
+      <div class="cf-actions" style="margin-top:16px">
+        <button class="cf-btn-submit" id="caisseSubmitBtnActe" type="submit" style="font-size:16px;padding:15px 32px">
+          ✔ Valider &amp; Imprimer le reçu
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Section MATERNITÉ (NAT/CES) ──────────────────────────────────── -->
+    <div class="cf-card" id="sectionMaternite">
       <div class="cf-section-title" id="fraisTitle">🏥 Détail des frais</div>
 
       <div class="cf-grid cols-2" style="gap:14px">
@@ -249,7 +423,7 @@
           ✔ Valider &amp; Imprimer le reçu
         </button>
       </div>
-    </div>
+    </div><!-- /sectionMaternite -->
   </div>
 
 </div>
@@ -391,15 +565,75 @@ function formatDate(str) {
 }
 
 // ── Type acte ─────────────────────────────────────────────────
+const MATERNITE_TYPES = ['NAT', 'CES'];
+const TYPE_LABELS = {
+  NAT:'Accouchement naturel', CES:'Césarienne',
+  CURT:'Curetage', STERT:'Stérilet', COLUTR:'Col utérus', PMA:'PMA',
+  CIRCO:'Circoncision', ORCHI:'Orchidopexie', MALGEN:'Malformations génitales',
+  CHIRP:'Chirurgie pénis', HERNIE:'Hernie', KYSTE:'Kyste', DRAIN:'Drainage',
+  ECHO:'Échographie', LAB:'Analyses', ECG:'ECG', EEG:'EEG',
+  SPIRO:'Spirométrie', TALLER:'Tests allergiques', TAUDIT:'Tests auditifs',
+  CONSULT:'Consultation', CGYNEC:'Consultation gynécologie',
+  COBST:'Consultation obstétrique', CPEDIA:'Consultation pédiatrie',
+  CCHIRG:'Consultation chirurgie générale', CENDO:'Consultation endocrinologie',
+  CNEPHR:'Consultation néphrologie', CPNEUM:'Consultation pneumologie',
+  CNUTRI:'Consultation nutrition', OTHER:'Autre'
+};
+
 function setTypeActe(val) {
   document.getElementById('serviceType').value = val;
   document.querySelectorAll('#typeActeBtns .payer-btn').forEach(btn =>
     btn.classList.toggle('active', btn.dataset.val === val));
-  const isAcc = (val === 'NAT' || val === 'CES');
-  document.getElementById('fraisTitle').textContent =
-    isAcc ? (val === 'CES' ? '⚕️ Détail frais césarienne' : '🏥 Détail frais accouchement naturel')
-          : '📋 Détail des frais';
-  recalc();
+
+  const isMaternite = MATERNITE_TYPES.includes(val);
+  const sectionMat  = document.getElementById('sectionMaternite');
+  const sectionActe = document.getElementById('sectionActe');
+
+  if (isMaternite) {
+    sectionMat.style.display  = '';
+    sectionActe.style.display = 'none';
+    document.getElementById('fraisTitle').textContent =
+      val === 'CES' ? '⚕️ Détail frais césarienne' : '🏥 Détail frais accouchement naturel';
+    recalc();
+  } else {
+    sectionMat.style.display  = 'none';
+    sectionActe.style.display = '';
+    const label = TYPE_LABELS[val] || val;
+    document.getElementById('acteTitleLabel').textContent = '🏥 ' + label;
+    recalcActe();
+  }
+}
+
+// ── Recalc acte (non-maternité) ───────────────────────────────
+function gfa(id) { return parseFloat(document.getElementById(id)?.value||'0')||0; }
+
+function recalcActe() {
+  const prix   = gfa('aPrixActe');
+  const nuiteN = parseInt(document.getElementById('aNuiteNb')?.value||'0')||0;
+  const nuiteP = gfa('aNuitePrix');
+  const gardeN = parseInt(document.getElementById('aGardeNb')?.value||'0')||0;
+  const gardeP = gfa('aGardePrix');
+  const bilan  = gfa('aBilanTotal');
+  const trait  = gfa('aTraitTotal');
+  const oxy    = gfa('aOxyTotal');
+  const trans  = gfa('aTransTotal');
+
+  const nuiteT = nuiteN * nuiteP;
+  const gardeT = gardeN * gardeP;
+  const extras = nuiteT + gardeT + bilan + trait + oxy + trans;
+  const total  = prix + extras;
+
+  const fmt = v => v.toLocaleString('fr-DZ') + ' DA';
+  document.getElementById('aNuiteTotal').textContent = fmt(nuiteT);
+  document.getElementById('aGardeTotal').textContent = fmt(gardeT);
+  document.getElementById('aGrandTotal').textContent = fmt(total);
+
+  const tiersEl = document.getElementById('tiersMontant');
+  const tiers   = tiersEl ? parseFloat(tiersEl.value||'0')||0 : 0;
+  const patient = Math.max(0, total - tiers);
+  document.getElementById('recapTiersActe').textContent   = fmt(tiers);
+  document.getElementById('recapPatientActe').textContent = fmt(patient);
+  document.getElementById('recapTotalActe').textContent   = fmt(total);
 }
 
 // ── Payer type ────────────────────────────────────────────────
@@ -473,6 +707,9 @@ function updateMontantPatient(total) {
   document.getElementById('recapTiers').textContent = tiers.toLocaleString('fr-DZ') + ' DA';
   document.getElementById('recapPatient').textContent = patient.toLocaleString('fr-DZ') + ' DA';
   document.getElementById('recapTotal').textContent = total.toLocaleString('fr-DZ') + ' DA';
+  // Also refresh acte section if visible
+  const sActe = document.getElementById('sectionActe');
+  if (sActe && sActe.style.display !== 'none') recalcActe();
 }
 
 // ── Médicaments ──────────────────────────────────────────────

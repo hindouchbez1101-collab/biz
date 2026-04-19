@@ -35,12 +35,41 @@ class PayerType(models.TextChoices):
 
 
 class ServiceType(models.TextChoices):
+    # ── Maternité (formulaire détaillé accouchement) ──────────────────────
+    ACC_NATUREL  = "NAT",    "Accouchement naturel"
+    CESARIENNE   = "CES",    "Césarienne"
+    # ── Actes chirurgicaux / gynéco ────────────────────────────────────────
+    CURETAGE     = "CURT",   "Curetage"
+    STERILET     = "STERT",  "Stérilet"
+    COL_UTERUS   = "COLUTR", "Col utérus"
+    PMA          = "PMA",    "PMA"
+    CIRCONCISION = "CIRCO",  "Circoncision"
+    ORCHIDOPEXIE = "ORCHI",  "Orchidopexie"
+    MAL_GENITALE = "MALGEN", "Malformations génitales"
+    CHIR_PENIS   = "CHIRP",  "Chirurgie pénis"
+    HERNIE       = "HERNIE", "Hernie"
+    KYSTE        = "KYSTE",  "Kyste"
+    DRAINAGE     = "DRAIN",  "Drainage"
+    # ── Examens médicaux ───────────────────────────────────────────────────
+    ECHOGRAPHIE  = "ECHO",   "Échographie"
+    ANALYSES     = "LAB",    "Analyses"
+    ECG          = "ECG",    "ECG"
+    EEG          = "EEG",    "EEG"
+    SPIROMETRIE  = "SPIRO",  "Spirométrie"
+    TESTS_ALLER  = "TALLER", "Tests allergiques"
+    TESTS_AUDIT  = "TAUDIT", "Tests auditifs"
+    # ── Consultations spécialisées ─────────────────────────────────────────
     CONSULTATION = "CONSULT", "Consultation"
-    ECHOGRAPHIE = "ECHO", "Échographie"
-    ACC_NATUREL = "NAT", "Accouchement naturel"
-    CESARIENNE = "CES", "Césarienne"
-    ANALYSES = "LAB", "Analyses"
-    AUTRE = "OTHER", "Autre"
+    CONSULT_GYN  = "CGYNEC",  "Consultation gynécologie"
+    CONSULT_OBST = "COBST",   "Consultation obstétrique"
+    CONSULT_PED  = "CPEDIA",  "Consultation pédiatrie"
+    CONSULT_CHIR = "CCHIRG",  "Consultation chirurgie générale"
+    CONSULT_ENDO = "CENDO",   "Consultation endocrinologie"
+    CONSULT_NEPH = "CNEPHR",  "Consultation néphrologie"
+    CONSULT_PNEU = "CPNEUM",  "Consultation pneumologie"
+    CONSULT_NUTR = "CNUTRI",  "Consultation nutrition"
+    # ── Autre ─────────────────────────────────────────────────────────────
+    AUTRE        = "OTHER",   "Autre"
 
 
 class AppointmentStatus(models.TextChoices):
@@ -539,3 +568,73 @@ class MouvementPharmacie(models.Model):
 
     def __str__(self):
         return f"{self.get_type_mouvement_display()} — {self.medicament.nom} × {self.quantite}"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  DÉTAIL ACTE CHIRURGICAL (non-maternité)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class ActeChirurgicalDetail(models.Model):
+    """Frais détaillés pour tous les actes hors accouchement (NAT/CES)."""
+    payment          = models.OneToOneField('Payment', on_delete=models.CASCADE,
+                           related_name='acte_detail')
+    prix_acte        = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                           verbose_name="PRX de l'acte")
+
+    # Nuité en plus
+    nuite_nb         = models.PositiveIntegerField(default=0, verbose_name="Nombre de nuités")
+    nuite_prix       = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                           verbose_name="Prix / nuit")
+
+    # Garde malade
+    garde_nb         = models.PositiveIntegerField(default=0, verbose_name="Nombre gardes")
+    garde_prix       = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                           verbose_name="Prix / garde")
+
+    # Bilan ajouté
+    bilan_desc       = models.CharField(max_length=300, blank=True, default="",
+                           verbose_name="Bilan ajouté (description)")
+    bilan_total      = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                           verbose_name="Bilan total")
+
+    # Traitement associé
+    traitement_desc  = models.CharField(max_length=300, blank=True, default="",
+                           verbose_name="Traitement associé (description)")
+    traitement_total = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                           verbose_name="Traitement total")
+
+    # Oxygène bébé
+    oxygene_total    = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                           verbose_name="Oxygène bébé total")
+
+    # Transfusion
+    transfusion_total = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                           verbose_name="Transfusion total")
+
+    notes            = models.TextField(blank=True, default="", verbose_name="Notes")
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Détail acte chirurgical"
+
+    def nuite_total(self):
+        return (self.nuite_nb or 0) * float(self.nuite_prix or 0)
+
+    def garde_total(self):
+        return (self.garde_nb or 0) * float(self.garde_prix or 0)
+
+    def total_extras(self):
+        return (
+            self.nuite_total() +
+            self.garde_total() +
+            float(self.bilan_total or 0) +
+            float(self.traitement_total or 0) +
+            float(self.oxygene_total or 0) +
+            float(self.transfusion_total or 0)
+        )
+
+    def total_general(self):
+        return float(self.prix_acte or 0) + self.total_extras()
+
+    def __str__(self):
+        return f"Détail acte — {self.payment}"
