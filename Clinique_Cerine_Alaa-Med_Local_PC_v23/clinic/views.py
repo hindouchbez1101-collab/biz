@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from .utils import montant_en_lettres_fr
 
 from .forms import LoginForm, PatientForm, AppointmentForm, PaymentForm, PaymentItemForm, ExpenseForm, LabPackApplyForm, SupplierForm, PurchaseForm, PurchaseItemForm, EmployeeForm, SalaryForm, MedecinAmbulantForm, HonorairesPayerForm
-from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AuditLog, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, TarifAccouchement, AccouchementDetail, Doctor, MedecinAmbulant
+from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AuditLog, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, TarifAccouchement, AccouchementDetail, ActeChirurgicalDetail, Doctor, MedecinAmbulant
 from .permissions import require_groups, GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE, in_groups
 
 
@@ -453,6 +453,11 @@ def payment_receipt(request, pk:int):
     except Exception:
         acc_detail = None
 
+    try:
+        acte_detail = pay.acte_detail
+    except Exception:
+        acte_detail = None
+
     return render(request, "payments/receipt_a5.html", {
         "pay": pay,
         "items": items,
@@ -461,6 +466,7 @@ def payment_receipt(request, pk:int):
         "paid": paid,
         "unpaid": unpaid,
         "acc_detail": acc_detail,
+        "acte_detail": acte_detail,
     })
 # Expenses
 @login_required
@@ -1768,6 +1774,52 @@ def caisse_view(request):
                     except (ValueError, TypeError):
                         pass
                 AccouchementDetail.objects.create(**acc_kwargs)
+            else:
+                # Acte non-maternité : enregistrer les frais détaillés de l'acte
+                def _fi(k, default=0):
+                    v = request.POST.get(k, "").strip()
+                    try: return float(v) if v else float(default)
+                    except: return float(default)
+                def _ii(k, default=0):
+                    v = request.POST.get(k, "").strip()
+                    try: return int(v) if v else int(default)
+                    except: return int(default)
+
+                acte_prix       = _fi("acte_prix_acte")
+                acte_nuite_nb   = _ii("acte_nuite_nb")
+                acte_nuite_prix = _fi("acte_nuite_prix")
+                acte_garde_nb   = _ii("acte_garde_nb")
+                acte_garde_prix = _fi("acte_garde_prix")
+                acte_bilan_d    = request.POST.get("acte_bilan_desc", "").strip()
+                acte_bilan_t    = _fi("acte_bilan_total")
+                acte_trait_d    = request.POST.get("acte_traitement_desc", "").strip()
+                acte_trait_t    = _fi("acte_traitement_total")
+                acte_oxy        = _fi("acte_oxygene_total")
+                acte_trans      = _fi("acte_transfusion_total")
+                acte_notes_val  = request.POST.get("acte_notes", "").strip()
+
+                # Recalculate total from acte fields (override what was sent)
+                nuite_total = acte_nuite_nb * acte_nuite_prix
+                garde_total = acte_garde_nb * acte_garde_prix
+                acte_total  = acte_prix + nuite_total + garde_total + acte_bilan_t + acte_trait_t + acte_oxy + acte_trans
+                # Update payment totals
+                acte_tiers   = float(tiers_montant) if tiers_montant else 0
+                acte_patient = max(0, acte_total - acte_tiers)
+                pay.amount_total        = acte_total
+                pay.amount_patient      = acte_patient
+                pay.amount_third_party  = acte_tiers
+                pay.save(update_fields=['amount_total', 'amount_patient', 'amount_third_party'])
+
+                ActeChirurgicalDetail.objects.create(
+                    payment=pay,
+                    prix_acte=acte_prix,
+                    nuite_nb=acte_nuite_nb, nuite_prix=acte_nuite_prix,
+                    garde_nb=acte_garde_nb, garde_prix=acte_garde_prix,
+                    bilan_desc=acte_bilan_d, bilan_total=acte_bilan_t,
+                    traitement_desc=acte_trait_d, traitement_total=acte_trait_t,
+                    oxygene_total=acte_oxy, transfusion_total=acte_trans,
+                    notes=acte_notes_val,
+                )
 
             AuditLog.objects.create(
                 actor=request.user, action="CREATE", entity="Payment",

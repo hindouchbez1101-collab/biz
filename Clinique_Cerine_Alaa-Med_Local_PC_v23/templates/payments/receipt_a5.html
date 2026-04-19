@@ -255,7 +255,66 @@
   </thead>
   <tbody>
 
-  {% if acc_detail %}
+  {% if acte_detail %}
+    <!-- PRX DE L'ACTE + extras (acte non-maternité) -->
+    <tr>
+      <td><b>PRX DE L'ACTE — {{ pay.get_service_type_display }}</b>
+        {% if pay.doctor %}<br><span style="font-size:10px;color:#555">Dr. {{ pay.doctor.full_name }}</span>{% endif %}
+      </td>
+      <td class="center">1</td>
+      <td class="amount">{{ acte_detail.prix_acte }}</td>
+      <td class="amount">{{ acte_detail.prix_acte }}</td>
+    </tr>
+    {% if acte_detail.nuite_nb %}
+    <tr>
+      <td>Nuité en plus</td>
+      <td class="center">{{ acte_detail.nuite_nb }}</td>
+      <td class="amount">{{ acte_detail.nuite_prix }}</td>
+      <td class="amount">{% widthratio acte_detail.nuite_nb 1 acte_detail.nuite_prix %}</td>
+    </tr>
+    {% endif %}
+    {% if acte_detail.garde_nb %}
+    <tr>
+      <td>Garde Malade</td>
+      <td class="center">{{ acte_detail.garde_nb }}</td>
+      <td class="amount">{{ acte_detail.garde_prix }}</td>
+      <td class="amount">{% widthratio acte_detail.garde_nb 1 acte_detail.garde_prix %}</td>
+    </tr>
+    {% endif %}
+    {% if acte_detail.bilan_total %}
+    <tr>
+      <td>Bilan Ajouté{% if acte_detail.bilan_desc %} — {{ acte_detail.bilan_desc }}{% endif %}</td>
+      <td class="center">—</td>
+      <td class="amount">—</td>
+      <td class="amount">{{ acte_detail.bilan_total }}</td>
+    </tr>
+    {% endif %}
+    {% if acte_detail.traitement_total %}
+    <tr>
+      <td>Traitement Associé{% if acte_detail.traitement_desc %} — {{ acte_detail.traitement_desc }}{% endif %}</td>
+      <td class="center">—</td>
+      <td class="amount">—</td>
+      <td class="amount">{{ acte_detail.traitement_total }}</td>
+    </tr>
+    {% endif %}
+    {% if acte_detail.oxygene_total %}
+    <tr>
+      <td>Oxygène Bébé</td>
+      <td class="center">—</td>
+      <td class="amount">—</td>
+      <td class="amount">{{ acte_detail.oxygene_total }}</td>
+    </tr>
+    {% endif %}
+    {% if acte_detail.transfusion_total %}
+    <tr>
+      <td>Transfusion</td>
+      <td class="center">—</td>
+      <td class="amount">—</td>
+      <td class="amount">{{ acte_detail.transfusion_total }}</td>
+    </tr>
+    {% endif %}
+
+  {% elif acc_detail %}
     {% if acc_detail.salle %}
     <tr>
       <td>Salle d'accouchement / Bloc opératoire</td>
@@ -374,7 +433,9 @@
   </tfoot>
 </table>
 
-{% if acc_detail.notes %}
+{% if acte_detail.notes %}
+<div class="notes-row">Observations : {{ acte_detail.notes }}</div>
+{% elif acc_detail.notes %}
 <div class="notes-row">Observations : {{ acc_detail.notes }}</div>
 {% endif %}
 
