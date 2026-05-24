@@ -1,10 +1,10 @@
-Django==5.0.8
-python-dotenv==1.0.1
-psycopg[binary]==3.2.1
-python-barcode==0.15.1
-Pillow==10.4.0
-openpyxl==3.1.5
-reportlab==4.2.5
+Django
+python-dotenv
+psycopg
+python-barcode
+Pillow
+openpyxl
+reportlab
 gunicorn
 dj-database-url
 whitenoise
