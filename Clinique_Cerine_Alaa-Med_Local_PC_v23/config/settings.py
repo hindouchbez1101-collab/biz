@@ -14,15 +14,15 @@ if DEBUG:
     ALLOWED_HOSTS = ["*"]
 else:
     ALLOWED_HOSTS = [
-        "biz-production-22f5.up.railway.app",
+        "https://biz-3.onrender.com",
         "localhost",
         "127.0.0.1",
-        ".railway.app",
+        ".onrender.com",
     ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://biz-production-22f5.up.railway.app",
-    "https://*.railway.app",
+    "https://biz-3.onrender.com/",
+    "https://*.onrender.com",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
