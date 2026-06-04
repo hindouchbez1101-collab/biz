@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}{{ sf.full_name }}{% endblock %}
+{% block actions %}
+  <a class="btn" href="{% url 'sage_femme_list' %}">← Liste sage-femmes</a>
+  <a class="btn" href="{% url 'sage_femme_edit' sf.pk %}">✏️ Modifier</a>
+{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/forms.css">
+
+<!-- ── En-tête sage-femme ── -->
+<div class="card" style="margin-bottom:20px">
+  <div style="font-size:1.2rem;font-weight:700;margin-bottom:6px">
+    👩‍⚕️ {{ sf.full_name }}
+    {% if not sf.is_active %}<span class="badge red" style="margin-left:8px">Inactive</span>{% endif %}
+  </div>
+  {% if sf.specialite %}<div class="muted">Spécialité / Service : {{ sf.specialite }}</div>{% endif %}
+  {% if sf.phone %}<div class="muted">Téléphone : {{ sf.phone }}</div>{% endif %}
+</div>
+
+<!-- ── KPIs ── -->
+<div class="grid-3" style="margin-bottom:24px">
+  <div class="card kpi-accent-blue" style="padding:14px 18px">
+    <div class="card-label">Total honoraires</div>
+    <div class="card-kpi">{{ total|floatformat:2 }} DA</div>
+  </div>
+  <div class="card kpi-accent-green" style="padding:14px 18px">
+    <div class="card-label">Payés (déduits caisse)</div>
+    <div class="card-kpi">{{ payes|floatformat:2 }} DA</div>
+  </div>
+  <div class="card kpi-accent-amber" style="padding:14px 18px">
+    <div class="card-label">Restant dû</div>
+    <div class="card-kpi">{{ dus|floatformat:2 }} DA</div>
+  </div>
+</div>
+
+<!-- ── Statistiques mensuelles ── -->
+{% if monthly_stats %}
+<div class="card" style="margin-bottom:24px">
+  <div class="cf-section-title" style="margin-bottom:12px">📊 Statistiques par mois</div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Mois</th>
+        <th style="text-align:center" colspan="3">Accouchements naturels</th>
+        <th style="text-align:center" colspan="3">Césariennes</th>
+        <th style="text-align:center">Total actes</th>
+        <th style="text-align:right">Honoraires SF</th>
+      </tr>
+      <tr style="font-size:11px;color:var(--muted)">
+        <th></th>
+        <th style="text-align:center">Général</th>
+        <th style="text-align:center">Chifa</th>
+        <th style="text-align:center">Militaire</th>
+        <th style="text-align:center">Général</th>
+        <th style="text-align:center">Chifa</th>
+        <th style="text-align:center">Militaire</th>
+        <th></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in monthly_stats %}
+      {% with total_actes=s.nat_normal|add:s.nat_chifa|add:s.nat_mil|add:s.ces_normal|add:s.ces_chifa|add:s.ces_mil %}
+      <tr>
+        <td style="font-weight:700">{{ s.mois|date:"F Y"|capfirst }}</td>
+        <td style="text-align:center">{% if s.nat_normal %}<span class="badge green">{{ s.nat_normal }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.nat_chifa %}<span class="badge blue">{{ s.nat_chifa }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.nat_mil %}<span class="badge">{{ s.nat_mil }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.ces_normal %}<span class="badge green">{{ s.ces_normal }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.ces_chifa %}<span class="badge blue">{{ s.ces_chifa }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center">{% if s.ces_mil %}<span class="badge">{{ s.ces_mil }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td style="text-align:center;font-weight:700">{{ total_actes }}</td>
+        <td style="text-align:right;font-weight:700">{{ s.total_hon|floatformat:2 }} DA</td>
+      </tr>
+      {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ── Liste des accouchements ── -->
+<div class="card">
+  <div class="cf-section-title" style="margin-bottom:16px">Détail des accouchements</div>
+  {% if accouchements %}
+  <table class="table sortable">
+    <thead>
+      <tr>
+        <th data-sort="date">Date</th>
+        <th data-sort="text">Patiente</th>
+        <th data-sort="text">Acte</th>
+        <th data-sort="text">Dossier</th>
+        <th data-sort="num" style="text-align:right">Honoraires SF (DA)</th>
+        <th data-sort="text" style="text-align:center">Statut</th>
+        <th style="text-align:center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for acc in accouchements %}
+      <tr>
+        <td style="white-space:nowrap" data-val="{{ acc.payment.paid_at|date:'Y-m-d' }}">{{ acc.payment.paid_at|date:"d/m/Y" }}</td>
+        <td>
+          <a href="{% url 'patient_detail' acc.payment.patient.pk %}">{{ acc.payment.patient.last_name }} {{ acc.payment.patient.first_name }}</a>
+          <br><span class="muted" style="font-size:.8rem">Reçu {{ acc.payment.receipt_no }}</span>
+        </td>
+        <td>
+          {% if acc.type_acte == "CES" %}
+            <span class="badge red">Césarienne</span>
+          {% else %}
+            <span class="badge green">Nat.</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if acc.payment.payer_type == "CHIFFA" %}
+            <span class="badge blue">Chifa</span>
+          {% elif acc.payment.payer_type == "MIL" %}
+            <span class="badge">Militaire</span>
+          {% else %}
+            <span class="muted">Général</span>
+          {% endif %}
+        </td>
+        <td style="text-align:right" data-val="{{ acc.sage_femme }}">
+          <form method="post" action="{% url 'honoraires_sf_edit_montant' acc.pk %}"
+            style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
+            {% csrf_token %}
+            <input type="number" name="sage_femme"
+              value="{{ acc.sage_femme }}"
+              step="0.01" min="0" style="width:100px;padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;text-align:right"
+              {% if acc.honoraires_sf_payes %}disabled{% endif %}>
+            {% if not acc.honoraires_sf_payes %}
+            <button type="submit" class="btn small" title="Enregistrer"
+              style="padding:4px 8px;font-size:12px">💾</button>
+            {% endif %}
+          </form>
+        </td>
+        <td style="text-align:center">
+          {% if acc.honoraires_sf_payes %}
+            <span class="badge green">✓ Payé</span>
+            {% if acc.honoraires_sf_payes_le %}
+              <div class="muted" style="font-size:.78rem">{{ acc.honoraires_sf_payes_le|date:"d/m/Y" }}</div>
+            {% endif %}
+          {% else %}
+            <span class="badge red">Non payé</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center">
+          {% if not acc.honoraires_sf_payes %}
+          <form method="post" action="{% url 'honoraires_sf_mark_paid' acc.pk %}" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="honoraires_payes_le" value="{% now 'Y-m-d' %}">
+            <button class="btn small primary" type="submit"
+              onclick="return confirm('Payer {{ acc.sage_femme }} DA et déduire de la caisse ?')">
+              ✓ Payer
+            </button>
+          </form>
+          {% else %}
+          <form method="post" action="{% url 'honoraires_sf_mark_unpaid' acc.pk %}" style="display:inline">
+            {% csrf_token %}
+            <button class="btn small" type="submit"
+              onclick="return confirm('Annuler ce paiement et réintégrer en caisse ?')"
+              style="color:#ef4444;border-color:#ef4444">
+              ✕ Annuler
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted" style="text-align:center;padding:32px">
+    Aucun accouchement enregistré pour cette sage-femme.
+  </p>
+  {% endif %}
+</div>
+
+{% endblock %}

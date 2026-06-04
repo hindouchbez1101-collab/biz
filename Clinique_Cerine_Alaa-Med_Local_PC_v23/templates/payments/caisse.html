@@ -372,6 +372,20 @@
         </div>
 
         <div class="cf-field span-2">
+          <label class="cf-label">Sage-femme ambulatoire <span class="opt">(optionnel — identifie la SF)</span></label>
+          <select class="cf-input" name="acc_sage_femme_ext" id="fSageFemmeExt">
+            <option value="">— Aucune / Non précisée —</option>
+            {% for sf in sage_femmes %}
+            <option value="{{ sf.pk }}">{{ sf.full_name }}{% if sf.specialite %} — {{ sf.specialite }}{% endif %}</option>
+            {% endfor %}
+          </select>
+          <div class="cf-hint" style="margin-top:4px">
+            Sélectionner la sage-femme pour suivi de ses honoraires.
+            <a href="{% url 'sage_femme_new' %}" target="_blank" style="margin-left:6px">+ Ajouter une SF</a>
+          </div>
+        </div>
+
+        <div class="cf-field span-2">
           <label class="cf-label">🧴 Médicaments &amp; consommables utilisés</label>
           <div id="medsRows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px"></div>
           <div style="display:flex;gap:8px;align-items:center">

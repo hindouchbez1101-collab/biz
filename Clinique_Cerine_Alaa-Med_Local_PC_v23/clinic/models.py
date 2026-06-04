@@ -388,6 +388,37 @@ class ExamenMaternite(models.Model):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+#  SAGE-FEMMES AMBULATOIRES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class SageFemme(models.Model):
+    full_name   = models.CharField(max_length=200, unique=True, verbose_name="Nom complet")
+    phone       = models.CharField(max_length=60, blank=True, default="", verbose_name="Téléphone")
+    specialite  = models.CharField(max_length=120, blank=True, default="", verbose_name="Spécialité / Service")
+    is_active   = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["full_name"]
+        verbose_name = "Sage-femme"
+
+    def __str__(self):
+        return self.full_name
+
+    def total_honoraires(self):
+        return float(self.accouchements.aggregate(
+            t=models.Sum('sage_femme'))['t'] or 0)
+
+    def honoraires_payes(self):
+        return float(self.accouchements.filter(honoraires_sf_payes=True).aggregate(
+            t=models.Sum('sage_femme'))['t'] or 0)
+
+    def honoraires_dus(self):
+        return float(self.accouchements.filter(honoraires_sf_payes=False).aggregate(
+            t=models.Sum('sage_femme'))['t'] or 0)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 #  MÉDECINS AMBULATOIRES
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -468,8 +499,13 @@ class AccouchementDetail(models.Model):
     # Honoraires médecin vacataire (ex: médecin extérieur appelé pour l'accouchement)
     honoraires_medecin  = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Honoraires médecin vacataire (DA)")
     medecin_ambulant    = models.ForeignKey('MedecinAmbulant', on_delete=models.SET_NULL, null=True, blank=True, related_name='accouchements', verbose_name="Médecin ambulatoire")
-    honoraires_payes    = models.BooleanField(default=False, verbose_name="Honoraires payés")
-    honoraires_payes_le = models.DateField(null=True, blank=True, verbose_name="Payé le")
+    honoraires_payes    = models.BooleanField(default=False, verbose_name="Honoraires médecin payés")
+    honoraires_payes_le = models.DateField(null=True, blank=True, verbose_name="Médecin payé le")
+
+    # Sage-femme ambulatoire
+    sage_femme_ext      = models.ForeignKey('SageFemme', on_delete=models.SET_NULL, null=True, blank=True, related_name='accouchements', verbose_name="Sage-femme ambulatoire")
+    honoraires_sf_payes    = models.BooleanField(default=False, verbose_name="Honoraires SF payés")
+    honoraires_sf_payes_le = models.DateField(null=True, blank=True, verbose_name="SF payée le")
 
     # Notes libres
     notes               = models.TextField(blank=True, default='', verbose_name="Notes complémentaires")

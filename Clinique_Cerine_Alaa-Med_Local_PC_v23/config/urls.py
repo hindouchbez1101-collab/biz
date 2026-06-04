@@ -86,6 +86,15 @@ urlpatterns = [
     path("medecins-ambulants/honoraires/<int:acc_pk>/annuler/", v.honoraires_mark_unpaid,    name="honoraires_mark_unpaid"),
     path("medecins-ambulants/honoraires/<int:acc_pk>/modifier/", v.honoraires_edit_montant,  name="honoraires_edit_montant"),
 
+    # Sage-femmes ambulatoires
+    path("sage-femmes/",                                    v.sage_femme_list,   name="sage_femme_list"),
+    path("sage-femmes/new/",                                v.sage_femme_new,    name="sage_femme_new"),
+    path("sage-femmes/<int:pk>/",                           v.sage_femme_detail, name="sage_femme_detail"),
+    path("sage-femmes/<int:pk>/edit/",                      v.sage_femme_edit,   name="sage_femme_edit"),
+    path("sage-femmes/honoraires/<int:acc_pk>/payer/",      v.honoraires_sf_mark_paid,   name="honoraires_sf_mark_paid"),
+    path("sage-femmes/honoraires/<int:acc_pk>/annuler/",    v.honoraires_sf_mark_unpaid, name="honoraires_sf_mark_unpaid"),
+    path("sage-femmes/honoraires/<int:acc_pk>/modifier/",   v.honoraires_sf_edit_montant, name="honoraires_sf_edit_montant"),
+
     # Pharmacie clinique
     path("pharmacie/",                              v.pharmacie_dashboard,        name="pharmacie_dashboard"),
     path("pharmacie/mouvement/new/",                v.pharmacie_mouvement_new,    name="pharmacie_mouvement_new"),

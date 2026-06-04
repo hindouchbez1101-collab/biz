@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AppointmentStatus, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, MedecinAmbulant
+from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AppointmentStatus, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, MedecinAmbulant, SageFemme
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={"class":"input", "placeholder":"Utilisateur"}))
@@ -165,8 +165,19 @@ class MedecinAmbulantForm(forms.ModelForm):
         }
 
 
+class SageFemmeForm(forms.ModelForm):
+    class Meta:
+        model = SageFemme
+        fields = ["full_name", "phone", "specialite", "is_active"]
+        widgets = {
+            "full_name":  forms.TextInput(attrs={"class": "input"}),
+            "phone":      forms.TextInput(attrs={"class": "input"}),
+            "specialite": forms.TextInput(attrs={"class": "input"}),
+        }
+
+
 class HonorairesPayerForm(forms.Form):
-    """Marquer les honoraires d'un médecin comme payés."""
+    """Marquer les honoraires d'un médecin/SF comme payés."""
     honoraires_payes_le = forms.DateField(
         widget=forms.DateInput(attrs={"class": "input", "type": "date"}),
         label="Date de paiement",

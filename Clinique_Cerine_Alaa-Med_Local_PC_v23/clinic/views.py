@@ -9,8 +9,8 @@ from django.http import HttpResponse
 
 from .utils import montant_en_lettres_fr
 
-from .forms import LoginForm, PatientForm, AppointmentForm, PaymentForm, PaymentItemForm, ExpenseForm, LabPackApplyForm, SupplierForm, PurchaseForm, PurchaseItemForm, EmployeeForm, SalaryForm, MedecinAmbulantForm, HonorairesPayerForm
-from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AuditLog, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, TarifAccouchement, AccouchementDetail, ActeChirurgicalDetail, Doctor, MedecinAmbulant
+from .forms import LoginForm, PatientForm, AppointmentForm, PaymentForm, PaymentItemForm, ExpenseForm, LabPackApplyForm, SupplierForm, PurchaseForm, PurchaseItemForm, EmployeeForm, SalaryForm, MedecinAmbulantForm, SageFemmeForm, HonorairesPayerForm
+from .models import Patient, Appointment, Payment, PaymentItem, Expense, LabTest, LabPack, ServiceType, AuditLog, Supplier, Purchase, PurchaseItem, Employee, Salary, PurchaseStatus, TarifAccouchement, AccouchementDetail, ActeChirurgicalDetail, Doctor, MedecinAmbulant, SageFemme
 from .permissions import require_groups, GROUP_RECEPTION, GROUP_GERANT, GROUP_ADMIN, GROUP_PHARMACIE, in_groups
 
 
@@ -424,6 +424,7 @@ def payment_new(request):
     from .models import MedicamentConsommable
     medicaments = MedicamentConsommable.objects.filter(is_active=True).order_by("nom")
     medecins_ambulants = MedecinAmbulant.objects.filter(is_active=True)
+    sage_femmes = SageFemme.objects.filter(is_active=True)
     return render(request, "payments/form.html", {
         "form": form,
         "item_form": item_form,
@@ -434,6 +435,7 @@ def payment_new(request):
         "tarifs": tarifs,
         "medicaments": medicaments,
         "medecins_ambulants": medecins_ambulants,
+        "sage_femmes": sage_femmes,
     })
 
 @login_required
@@ -1718,6 +1720,7 @@ def caisse_view(request):
             hon_med    = _f("acc_honoraires_medecin")
             acc_notes  = request.POST.get("acc_notes", "").strip()
             med_amb_id = request.POST.get("acc_medecin_ambulant", "").strip() or None
+            sf_amb_id  = request.POST.get("acc_sage_femme_ext", "").strip() or None
 
             sejour = nb_nuits * tarif_nuit
             # honoraires_medecin exclus de la facture patient — réglés en interne
@@ -1771,6 +1774,11 @@ def caisse_view(request):
                 if med_amb_id:
                     try:
                         acc_kwargs['medecin_ambulant_id'] = int(med_amb_id)
+                    except (ValueError, TypeError):
+                        pass
+                if sf_amb_id:
+                    try:
+                        acc_kwargs['sage_femme_ext_id'] = int(sf_amb_id)
                     except (ValueError, TypeError):
                         pass
                 AccouchementDetail.objects.create(**acc_kwargs)
@@ -1832,6 +1840,7 @@ def caisse_view(request):
     from .models import MedicamentConsommable
     medicaments = MedicamentConsommable.objects.filter(is_active=True).order_by("nom")
     medecins_ambulants = MedecinAmbulant.objects.filter(is_active=True)
+    sage_femmes = SageFemme.objects.filter(is_active=True)
     return render(request, "payments/caisse.html", {
         "tarifs": tarifs,
         "doctors": doctors,
@@ -1841,6 +1850,7 @@ def caisse_view(request):
         "service_types": ServiceType.choices,
         "medicaments": medicaments,
         "medecins_ambulants": medecins_ambulants,
+        "sage_femmes": sage_femmes,
     })
 
 
@@ -1997,6 +2007,157 @@ def honoraires_mark_unpaid(request, acc_pk):
     if medecin_pk:
         return redirect('medecin_ambulant_detail', pk=medecin_pk)
     return redirect('medecin_ambulant_list')
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  SAGE-FEMMES AMBULATOIRES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def sage_femme_list(request):
+    sfs = SageFemme.objects.prefetch_related('accouchements').all()
+    data = []
+    for s in sfs:
+        accs  = s.accouchements.select_related('payment__patient').order_by('-payment__paid_at')
+        total = s.total_honoraires()
+        payes = s.honoraires_payes()
+        dus   = s.honoraires_dus()
+        data.append({'sf': s, 'accouchements': accs, 'total': total, 'payes': payes, 'dus': dus})
+    return render(request, 'sage_femmes/list.html', {'data': data})
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def sage_femme_new(request):
+    form = SageFemmeForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        s = form.save()
+        messages.success(request, f"Sage-femme « {s.full_name} » ajoutée.")
+        return redirect('sage_femme_detail', pk=s.pk)
+    return render(request, 'sage_femmes/form.html', {'form': form, 'titre': 'Nouvelle sage-femme'})
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def sage_femme_edit(request, pk):
+    s = get_object_or_404(SageFemme, pk=pk)
+    form = SageFemmeForm(request.POST or None, instance=s)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, "Sage-femme mise à jour.")
+        return redirect('sage_femme_detail', pk=s.pk)
+    return render(request, 'sage_femmes/form.html', {'form': form, 'titre': f'Modifier — {s.full_name}', 'sf': s})
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def sage_femme_detail(request, pk):
+    from django.db.models.functions import TruncMonth
+    sf   = get_object_or_404(SageFemme, pk=pk)
+    accs = sf.accouchements.select_related('payment__patient').order_by('-payment__paid_at')
+
+    monthly_raw = (
+        sf.accouchements
+        .select_related('payment')
+        .annotate(mois=TruncMonth('payment__paid_at'))
+        .values('mois', 'type_acte', 'payment__payer_type')
+        .annotate(nb=Count('id'), total_hon=Sum('sage_femme'))
+        .order_by('-mois', 'type_acte')
+    )
+    months_dict = {}
+    for row in monthly_raw:
+        m = row['mois']
+        if m not in months_dict:
+            months_dict[m] = {'nat_normal': 0, 'nat_chifa': 0, 'nat_mil': 0,
+                              'ces_normal': 0, 'ces_chifa': 0, 'ces_mil': 0,
+                              'total_hon': 0}
+        key = ('nat' if row['type_acte'] == 'NAT' else 'ces') + '_' + {
+            'NORMAL': 'normal', 'CHIFFA': 'chifa', 'MIL': 'mil'
+        }.get(row['payment__payer_type'], 'normal')
+        months_dict[m][key] = months_dict[m].get(key, 0) + row['nb']
+        months_dict[m]['total_hon'] += float(row['total_hon'] or 0)
+
+    monthly_stats = [{'mois': m, **v} for m, v in sorted(months_dict.items(), reverse=True)]
+
+    return render(request, 'sage_femmes/detail.html', {
+        'sf': sf,
+        'accouchements': accs,
+        'monthly_stats': monthly_stats,
+        'total': sf.total_honoraires(),
+        'payes': sf.honoraires_payes(),
+        'dus':   sf.honoraires_dus(),
+    })
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def honoraires_sf_edit_montant(request, acc_pk):
+    acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
+    if request.method == 'POST':
+        from decimal import Decimal, InvalidOperation
+        val = request.POST.get('sage_femme', '').strip()
+        try:
+            acc.sage_femme = Decimal(val)
+            acc.save(update_fields=['sage_femme'])
+            messages.success(request, f"Montant mis à jour : {acc.sage_femme} DA")
+        except (InvalidOperation, ValueError):
+            messages.error(request, "Montant invalide.")
+    sf_pk = acc.sage_femme_ext_id or 0
+    if sf_pk:
+        return redirect('sage_femme_detail', pk=sf_pk)
+    return redirect('sage_femme_list')
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def honoraires_sf_mark_paid(request, acc_pk):
+    acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
+    if request.method == 'POST':
+        form = HonorairesPayerForm(request.POST)
+        if form.is_valid():
+            date_paiement = form.cleaned_data['honoraires_payes_le']
+            with transaction.atomic():
+                acc.honoraires_sf_payes    = True
+                acc.honoraires_sf_payes_le = date_paiement
+                acc.save(update_fields=['honoraires_sf_payes', 'honoraires_sf_payes_le'])
+                if acc.sage_femme and float(acc.sage_femme) > 0:
+                    nom_sf = acc.sage_femme_ext.full_name if acc.sage_femme_ext else "Sage-femme"
+                    Expense.objects.create(
+                        category='HONORAIRES',
+                        amount=acc.sage_femme,
+                        spent_at=date_paiement,
+                        note=f"SF {nom_sf} — {acc.payment.patient} ({acc.payment.receipt_no})",
+                        created_by=request.user,
+                    )
+            messages.success(request, f"Honoraires SF payés et déduits de la caisse ({acc.sage_femme} DA).")
+    sf_pk = acc.sage_femme_ext_id or 0
+    if sf_pk:
+        return redirect('sage_femme_detail', pk=sf_pk)
+    return redirect('sage_femme_list')
+
+
+@login_required
+@require_groups(GROUP_GERANT, GROUP_ADMIN)
+def honoraires_sf_mark_unpaid(request, acc_pk):
+    acc = get_object_or_404(AccouchementDetail, pk=acc_pk)
+    if request.method == 'POST':
+        with transaction.atomic():
+            if acc.honoraires_sf_payes and acc.sage_femme and float(acc.sage_femme) > 0:
+                ref = acc.payment.receipt_no
+                Expense.objects.filter(
+                    category='HONORAIRES',
+                    note__icontains='SF ',
+                    note__contains=ref,
+                ).delete()
+            acc.honoraires_sf_payes    = False
+            acc.honoraires_sf_payes_le = None
+            acc.save(update_fields=['honoraires_sf_payes', 'honoraires_sf_payes_le'])
+        messages.success(request, "Paiement des honoraires SF annulé.")
+    sf_pk = acc.sage_femme_ext_id or 0
+    if sf_pk:
+        return redirect('sage_femme_detail', pk=sf_pk)
+    return redirect('sage_femme_list')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
